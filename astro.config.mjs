@@ -2,4 +2,15 @@
 import { defineConfig } from 'astro/config';
 
 // https://astro.build/config
-export default defineConfig({});
+export default defineConfig({
+  i18n: {
+    defaultLocale: 'ca',
+    locales: ['ca', 'es', 'en'],
+    routing: {
+      prefixDefaultLocale: true,
+    },
+  },
+  redirects: {
+    '/': '/ca',
+  },
+});

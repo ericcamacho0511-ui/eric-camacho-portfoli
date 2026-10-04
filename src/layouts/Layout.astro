@@ -1,0 +1,42 @@
+---
+import Nav from "../components/Nav.astro";
+import Footer from "../components/Footer.astro";
+import "../styles/global.css";
+import { t, ui, type Locale } from "../i18n/ui";
+import { ClientRouter } from "astro:transitions";
+
+interface Props {
+  title: string;
+  locale: Locale;
+  description?: string;
+  footerFlush?: boolean;
+}
+
+const { title, locale, description = t(ui.meta.description, locale), footerFlush = false } = Astro.props;
+---
+
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="description" content={description} />
+    <title>{title} - Èric Camacho</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <ClientRouter />
+  </head>
+  <body>
+    <Nav locale={locale} />
+    <main>
+      <slot />
+    </main>
+    <Footer locale={locale} flush={footerFlush} />
+  </body>
+</html>

@@ -1,0 +1,195 @@
+/* 1797 (Claustro Comfama) — the site's main title typeface, self-hosted.
+   Designed by Santiago Arango for the Claustro Comfama San Ignacio
+   renovation in Medellín. © 2018 Claustro Comfama San Ignacio, licensed
+   CC BY 4.0 (confirmed in the font file's own embedded metadata). */
+@font-face {
+  font-family: "1797";
+  src: url("/fonts/1797/1797-MEDIUM.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Babel Sans — the site's secondary (body/UI) typeface, self-hosted
+   since it's a local font file rather than a Google Fonts one. */
+@font-face {
+  font-family: "Babel Sans";
+  src: url("/fonts/babel-sans/BabelSans.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Babel Sans";
+  src: url("/fonts/babel-sans/BabelSans-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Babel Sans";
+  src: url("/fonts/babel-sans/BabelSans-Oblique.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Babel Sans";
+  src: url("/fonts/babel-sans/BabelSans-BoldOblique.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* ---------------------------------------------------------
+   Design tokens. Change a value here and it updates everywhere —
+   this is the one file to touch if you want to retune colors,
+   spacing, or type sizes across the whole site.
+--------------------------------------------------------- */
+:root {
+  --bg: #faf9f6;
+  --fg: #1c1a17;
+  --fg-muted: #726b5c;
+  --border: #e6e1d6;
+  --accent: #9a5334; /* used sparingly: link hover, small marks */
+  --title: #6e7239; /* Pantone 18-0435 TCX "Calla Green", sampled by eye — nudge if it's off */
+
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-title: "1797", "Bricolage Grotesque", "Inter", -apple-system, sans-serif;
+  --font-body: "Babel Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --container: 1200px;
+  --gutter: clamp(1.25rem, 4vw, 3rem);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  /* Every non-title piece of text on the site is lowercase by default,
+     first letter included — titles opt back out explicitly below. */
+  text-transform: lowercase;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+a {
+  color: inherit;
+}
+
+.wrap {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+/* Headline type — Fraunces at large sizes has a distinctive editorial
+   character (it's what gives us the "Park Pictures" feel) */
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  line-height: 1.05;
+  margin: 0;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+/* Titles get the Calla Green + Bricolage Grotesque treatment — but only
+   the color is skipped on dark backgrounds. Home's reel titles sit over
+   dark video with a dark overlay, so those stay light/cream for contrast
+   (styled separately in index.astro) but still pick up the new font. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-title);
+  color: var(--title);
+  text-transform: none;
+}
+
+.eyebrow {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: lowercase;
+  color: var(--fg-muted);
+}
+
+.link-underline {
+  text-decoration: none;
+  background-image: linear-gradient(var(--accent), var(--accent));
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  background-size: 0% 1px;
+  transition:
+    background-size 0.25s ease,
+    opacity 0.15s ease;
+  padding-bottom: 2px;
+}
+
+.link-underline:hover {
+  background-size: 100% 1px;
+}
+
+/* A small tactile "press" on click/tap — the mobile equivalent of hover,
+   since touch devices never fire :hover at all. */
+.link-underline:active {
+  opacity: 0.6;
+}
+
+/* Respect the OS-level "reduce motion" preference everywhere at once —
+   hover zooms, crossfades, link underlines all collapse to instant. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Scroll-reveal — src/lib/reveal.ts adds "is-visible" the moment an
+   element enters the viewport. Starts already revealed for anyone who
+   prefers reduced motion, independent of whether that script even runs. */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.7s ease,
+    transform 0.7s ease;
+}
+
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+  }
+}

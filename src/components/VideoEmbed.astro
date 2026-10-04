@@ -1,0 +1,50 @@
+---
+import { getEmbedUrl } from "../lib/embed";
+
+interface Props {
+  url: string;
+  title: string;
+  // Override for anything not standard landscape (e.g. 9/16 for a vertical
+  // edit) — YouTube/Vimeo don't reliably expose real per-video dimensions
+  // via their public oEmbed endpoints, so this has to be set by hand rather
+  // than detected automatically. Defaults to 16:9, which covers a normal
+  // upload like these.
+  aspectW?: number;
+  aspectH?: number;
+}
+
+const { url, title, aspectW = 16, aspectH = 9 } = Astro.props;
+const embedUrl = getEmbedUrl(url);
+// Caps a vertical video's height at 85vh instead of letting it grow huge;
+// landscape videos just stay full-width since min() picks 100% for them.
+const boxStyle = `aspect-ratio: ${aspectW} / ${aspectH}; width: 100%; max-width: min(100%, calc(85vh * ${aspectW} / ${aspectH})); margin: 0 auto;`;
+---
+
+{
+  embedUrl ? (
+    <div class="video-embed" style={boxStyle}>
+      <iframe
+        src={embedUrl}
+        title={title}
+        loading="lazy"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+      />
+    </div>
+  ) : null
+}
+
+<style>
+  .video-embed {
+    position: relative;
+    background: #000;
+  }
+
+  .video-embed iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+</style>

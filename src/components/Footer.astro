@@ -1,0 +1,46 @@
+---
+import { t, ui, type Locale } from "../i18n/ui";
+
+interface Props {
+  locale: Locale;
+  flush?: boolean;
+}
+const { locale, flush = false } = Astro.props;
+const year = new Date().getFullYear();
+---
+
+<footer class="footer" class:list={[{ flush }]}>
+  <div class="wrap footer-inner">
+    <span>&copy; {year} Èric Camacho</span>
+    <a href={`/${locale}/contact`} class="link-underline">{t(ui.footer.getInTouch, locale)}</a>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    padding: 3rem 0 4rem;
+    margin-top: 6rem;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Used right after a full-bleed section (e.g. the homepage reel) so the
+     footer sits flush against it instead of leaving a stray gap of empty
+     background color below the last clip. */
+  .footer.flush {
+    margin-top: 0;
+    border-top: none;
+  }
+
+  .footer-inner {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.92rem;
+    color: var(--fg-muted);
+    padding-top: 1.5rem;
+  }
+
+  .footer-inner a {
+    text-decoration: none;
+    color: var(--fg-muted);
+  }
+</style>

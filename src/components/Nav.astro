@@ -1,0 +1,150 @@
+---
+import { locales, localeNames, t, ui, switchLocalePath, type Locale } from "../i18n/ui";
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+
+const links = [
+  { href: `/${locale}/work`, label: t(ui.nav.work, locale), display: true },
+  { href: `/${locale}/about`, label: t(ui.nav.about, locale), display: true },
+  { href: `/${locale}/contact`, label: t(ui.nav.contact, locale), display: true },
+];
+
+const currentPath = Astro.url.pathname;
+---
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a href={`/${locale}/`} class="wordmark">Èric Camacho</a>
+    <div class="nav-right">
+      <nav class="links">
+        {
+          links.map((link) => (
+            <a href={link.href} class="link-underline" class:list={[{ "font-display": link.display }]}>
+              {link.label}
+            </a>
+          ))
+        }
+      </nav>
+      <div class="lang-switch">
+        {
+          locales.map((l, i) => (
+            <>
+              {i > 0 && <span class="lang-sep">/</span>}
+              <a
+                href={switchLocalePath(currentPath, l)}
+                class="lang-link"
+                class:list={[{ "is-active": l === locale }]}
+                aria-current={l === locale ? "true" : undefined}
+              >
+                {localeNames[l]}
+              </a>
+            </>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</header>
+
+<style>
+  .nav {
+    padding: 1.75rem 0;
+  }
+
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .wordmark {
+    display: inline-block;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    text-decoration: none;
+    letter-spacing: -0.01em;
+    transition: opacity 0.15s ease;
+  }
+
+  .wordmark:hover {
+    opacity: 0.75;
+  }
+
+  .wordmark:active {
+    opacity: 0.55;
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+  }
+
+  .links {
+    display: flex;
+    gap: 2rem;
+    font-size: 1.1rem;
+  }
+
+  .links a {
+    text-decoration: none;
+  }
+
+  .lang-switch {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    letter-spacing: 0.03em;
+    color: var(--fg-muted);
+  }
+
+  .lang-link {
+    display: inline-block;
+    text-decoration: none;
+    color: var(--fg-muted);
+    transition:
+      color 0.15s ease,
+      transform 0.15s ease;
+  }
+
+  .lang-link:hover {
+    color: var(--fg);
+  }
+
+  .lang-link:active {
+    transform: scale(0.92);
+  }
+
+  .lang-link.is-active {
+    color: var(--fg);
+    font-weight: 600;
+  }
+
+  .lang-sep {
+    opacity: 0.5;
+  }
+
+  @media (max-width: 600px) {
+    .nav-inner {
+      flex-wrap: wrap;
+      row-gap: 0.85rem;
+    }
+
+    .nav-right {
+      flex-basis: 100%;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .links {
+      gap: 1.25rem;
+      font-size: 1rem;
+    }
+  }
+</style>

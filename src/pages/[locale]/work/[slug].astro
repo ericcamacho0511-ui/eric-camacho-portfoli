@@ -1,0 +1,524 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import VideoEmbed from "../../../components/VideoEmbed.astro";
+import { getCollection } from "astro:content";
+import { locales, t, ui, typeLabel, roleLabel, type Locale } from "../../../i18n/ui";
+
+export async function getStaticPaths() {
+  const work = await getCollection("work");
+  return locales.flatMap((locale) =>
+    work.map((entry) => ({
+      params: { locale, slug: entry.id },
+      props: { entry },
+    })),
+  );
+}
+
+const { locale } = Astro.params as { locale: Locale };
+const { entry } = Astro.props;
+const {
+  title,
+  type,
+  role,
+  director,
+  artist,
+  year,
+  video,
+  videoAspectW,
+  videoAspectH,
+  cover,
+  bgVideo,
+  bgVideoAspectW,
+  bgVideoAspectH,
+  heroVideo,
+  heroVideoAspectW,
+  heroVideoAspectH,
+  poster,
+  credits,
+  asideWidth,
+  synopsis,
+  note,
+  stills,
+} = entry.data;
+
+// "poster" and "credits" share one slot beside the production note —
+// whichever is set wins (a project only ever has one). Credits can be
+// either a still or a short clip, so branch on the file extension.
+const asideMedia = poster ?? credits;
+const asideIsVideo = asideMedia?.endsWith(".mp4");
+// A credits still/clip is sized to match the stills gallery below rather
+// than the wider, hand-picked width an official poster gets.
+const isCreditsAside = !poster && !!credits;
+
+// The hero is a photo slider only for genuinely photo-only projects — any
+// video at all (an external link, a with-sound hero clip, or even just the
+// muted cover loop) always wins over a slider.
+const isGallery = !video && !heroVideo && !bgVideo && stills.length > 1;
+// Show the stills strip below whenever the hero above isn't already the
+// slider itself (which would otherwise duplicate every still twice).
+const galleryStills = isGallery ? [] : stills;
+const pageTitle = artist ? `${title} - ${artist}` : title;
+
+// Same "cap width so a tall clip never grows past 85vh" trick as
+// VideoEmbed — keeps each local video at its real aspect ratio instead of
+// being cropped to fill a fixed 16:9-ish box.
+function capStyle(w: number | undefined, h: number | undefined) {
+  const ratioW = w ?? 16;
+  const ratioH = h ?? 9;
+  return `aspect-ratio: ${ratioW} / ${ratioH}; width: 100%; max-width: min(100%, calc(85vh * ${ratioW} / ${ratioH})); margin: 0 auto;`;
+}
+const bgVideoStyle = capStyle(bgVideoAspectW, bgVideoAspectH);
+const heroVideoStyle = capStyle(heroVideoAspectW, heroVideoAspectH);
+---
+
+<Layout title={pageTitle} locale={locale}>
+  <article>
+    <header class="wrap head">
+      <p class="eyebrow">
+        {typeLabel(type, locale)} · {year}
+      </p>
+      <h1 class="title">{title}</h1>
+      {artist && (
+        <p class="artist font-display">
+          {t(ui.project.for, locale)} {artist}
+        </p>
+      )}
+      <p class="meta">
+        {roleLabel(role, locale)}
+        {director && ` · ${t(ui.project.directedBy, locale)} ${director}`}
+      </p>
+    </header>
+
+    <div class="media">
+      {
+        video ? (
+          <VideoEmbed url={video} title={title} aspectW={videoAspectW} aspectH={videoAspectH} />
+        ) : heroVideo ? (
+          <video
+            class="hero-video"
+            style={heroVideoStyle}
+            src={heroVideo}
+            poster={cover}
+            controls
+            playsinline
+          />
+        ) : isGallery ? (
+          <div class="slider" data-slider>
+            <div class="slider-track">
+              {stills.map((still, i) => (
+                <img
+                  src={still}
+                  alt={`${title}, photo ${i + 1}`}
+                  class="slide"
+                  class:list={[{ "is-active": i === 0 }]}
+                />
+              ))}
+            </div>
+            <button class="slider-nav prev" data-prev aria-label="Previous photo">
+              ‹
+            </button>
+            <button class="slider-nav next" data-next aria-label="Next photo">
+              ›
+            </button>
+            <div class="slider-counter" data-counter>
+              1 / {stills.length}
+            </div>
+          </div>
+        ) : bgVideo ? (
+          <video
+            class="hero-video"
+            style={bgVideoStyle}
+            src={bgVideo}
+            poster={cover}
+            autoplay
+            muted
+            loop
+            playsinline
+          />
+        ) : (
+          <img class="hero-image" src={cover} alt={title} />
+        )
+      }
+    </div>
+
+    <div class="wrap body" class:list={[{ "has-poster": !!poster }]}>
+      <div class="body-text">
+        {
+          synopsis && (
+            <div class="synopsis-block">
+              <p class="eyebrow">{t(ui.project.synopsis, locale)}</p>
+              <p class="synopsis-text font-display">{t(synopsis, locale)}</p>
+            </div>
+          )
+        }
+        <div class="note font-display">
+          <p>{t(note, locale)}</p>
+        </div>
+      </div>
+      {
+        asideMedia && (
+          <div
+            class="note-poster"
+            class:list={[{ "match-stills": isCreditsAside }]}
+            style={!isCreditsAside && asideWidth ? `max-width: ${asideWidth}px` : undefined}
+          >
+            {asideIsVideo ? (
+              <video src={asideMedia} autoplay muted loop playsinline />
+            ) : (
+              <img src={asideMedia} alt={`${title} poster`} />
+            )}
+          </div>
+        )
+      }
+    </div>
+
+    {
+      galleryStills.length > 0 && (
+        <div class="wrap stills-block">
+          <p class="eyebrow">{t(ui.project.stills, locale)}</p>
+          <div class="stills">
+            {galleryStills.map((still) => (
+              <img src={still} alt={title} data-reveal />
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    <div class="wrap tail">
+      <a href={`/${locale}/work`} class="back link-underline">
+        {t(ui.project.backToWork, locale)}
+      </a>
+    </div>
+  </article>
+</Layout>
+
+<script>
+  import { setupReveal } from "../../../lib/reveal";
+
+  // Re-runs on "astro:page-load" (first load, and after every client-side
+  // transition) — each project page has its own slider/video instances,
+  // so this has to re-bind every time you land here via the ClientRouter.
+  document.addEventListener("astro:page-load", () => {
+    setupReveal();
+
+    // Full-photo slider for gallery-only projects (e.g. a photobook) — no
+    // cropping, one photo at a time, swipe/click/keyboard to move through.
+    document.querySelectorAll<HTMLElement>("[data-slider]").forEach((slider) => {
+      if (slider.dataset.sliderBound) return;
+      slider.dataset.sliderBound = "true";
+
+      const slides = slider.querySelectorAll<HTMLElement>(".slide");
+      const counter = slider.querySelector<HTMLElement>("[data-counter]");
+      const prevBtn = slider.querySelector<HTMLElement>("[data-prev]");
+      const nextBtn = slider.querySelector<HTMLElement>("[data-next]");
+      let index = 0;
+
+      function show(next: number) {
+        slides[index].classList.remove("is-active");
+        index = (next + slides.length) % slides.length;
+        slides[index].classList.add("is-active");
+        if (counter) counter.textContent = `${index + 1} / ${slides.length}`;
+      }
+
+      prevBtn?.addEventListener("click", () => show(index - 1));
+      nextBtn?.addEventListener("click", () => show(index + 1));
+
+      slider.tabIndex = 0;
+      slider.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowLeft") show(index - 1);
+        if (e.key === "ArrowRight") show(index + 1);
+      });
+
+      let touchStartX = 0;
+      slider.addEventListener(
+        "touchstart",
+        (e) => {
+          touchStartX = e.touches[0].clientX;
+        },
+        { passive: true },
+      );
+      slider.addEventListener(
+        "touchend",
+        (e) => {
+          const delta = e.changedTouches[0].clientX - touchStartX;
+          if (Math.abs(delta) > 40) show(delta > 0 ? index - 1 : index + 1);
+        },
+        { passive: true },
+      );
+    });
+
+    // Muted autoplay loops (the project's background clip, and a credits
+    // clip shown beside the note) shouldn't run for anyone who's asked the
+    // OS for reduced motion — pause them back to their poster frame.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      document.querySelectorAll<HTMLVideoElement>("video[autoplay]").forEach((video) => {
+        video.pause();
+        video.currentTime = 0;
+        video.removeAttribute("autoplay");
+      });
+    }
+  });
+</script>
+
+<style>
+  .head {
+    padding-top: 3rem;
+    padding-bottom: 2.5rem;
+    max-width: 800px;
+  }
+
+  .title {
+    font-size: clamp(3.2rem, 7vw, 5.2rem);
+    margin-top: 0.5rem;
+  }
+
+  .artist {
+    margin-top: 0.6rem;
+    font-size: 1.3rem;
+    font-style: italic;
+    color: var(--fg-muted);
+  }
+
+  .meta {
+    margin-top: 0.75rem;
+    color: var(--fg-muted);
+    font-size: 0.9rem;
+  }
+
+  .media {
+    width: 100%;
+  }
+
+  .hero-video {
+    display: block;
+    background: #000;
+  }
+
+  .hero-image {
+    width: 100%;
+    max-height: 85vh;
+    object-fit: cover;
+    display: block;
+  }
+
+  .slider {
+    position: relative;
+    width: 100%;
+    height: 85vh;
+    min-height: 420px;
+    background: #100e0b;
+    overflow: hidden;
+  }
+
+  /* Keyboard users tab into the slider to use the arrow-key navigation —
+     give that a clear ring instead of the browser default, but only for
+     keyboard focus (not every mouse click). */
+  .slider:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+
+  .slider-track {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+
+  .slide.is-active {
+    opacity: 1;
+  }
+
+  .slider-nav {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 15%;
+    min-width: 3rem;
+    border: 0;
+    background: transparent;
+    color: #f5f2ea;
+    font-size: 2.5rem;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.55;
+    transition:
+      opacity 0.2s ease,
+      background-color 0.2s ease;
+  }
+
+  .slider-nav:hover {
+    opacity: 1;
+    background-color: rgba(0, 0, 0, 0.15);
+  }
+
+  .slider-nav:active {
+    background-color: rgba(0, 0, 0, 0.3);
+  }
+
+  .slider-nav.prev {
+    left: 0;
+    text-align: left;
+    padding-left: 1rem;
+  }
+
+  .slider-nav.next {
+    right: 0;
+    text-align: right;
+    padding-right: 1rem;
+  }
+
+  .slider-counter {
+    position: absolute;
+    bottom: 1.25rem;
+    right: 1.5rem;
+    color: #f5f2ea;
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    opacity: 0.85;
+  }
+
+  .body {
+    padding-top: 3.5rem;
+    padding-bottom: 2rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 3rem;
+  }
+
+  .body-text {
+    flex: 1 1 420px;
+    max-width: 800px;
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  /* Only narrow the text column when there's a poster to balance it
+     against — every other project keeps the full 800px reading width. */
+  .body.has-poster .body-text {
+    max-width: 580px;
+  }
+
+  .synopsis-text {
+    margin-top: 1.25rem;
+    font-size: 1.15rem;
+    font-style: italic;
+    line-height: 1.5;
+    font-weight: 400;
+    color: var(--fg-muted);
+  }
+
+  .note {
+    font-size: 1.3rem;
+    line-height: 1.5;
+    font-weight: 400;
+    color: var(--fg);
+  }
+
+  /* The poster/credits media spans the full stacked height of the text
+     beside it when its aspect ratio allows — a wide landscape still (unlike
+     a portrait poster) often can't reach that at a narrow max-width, so this
+     is centered both ways rather than pinned top-left when it falls short. */
+  .note-poster {
+    flex: 0 1 auto;
+    max-width: 440px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* A credits still/clip (as opposed to an official poster) is sized to
+     match a single image in the stills gallery below — same calc, same
+     breakpoints, so it reads as part of that same set of stills. Width-driven
+     with height:auto (not the stretch-to-column-height rule below), exactly
+     like ".stills img", so it's truly the same size and aspect ratio. */
+  .note-poster.match-stills {
+    width: calc((100% - 3.5rem) / 3);
+    max-width: none;
+  }
+
+  .note-poster img,
+  .note-poster video {
+    width: auto;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  .note-poster.match-stills img,
+  .note-poster.match-stills video {
+    width: 100%;
+    height: auto;
+    max-height: none;
+  }
+
+  .stills-block {
+    padding-top: 2.5rem;
+    padding-bottom: 1rem;
+  }
+
+  .stills {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.75rem;
+  }
+
+  .stills img {
+    /* No forced aspect-ratio/crop here on purpose — stills come in whatever
+       ratio they were shot (near-square, cinematic widescreen, etc.) and
+       forcing them into a fixed box would cut real composition off. */
+    width: calc((100% - 3.5rem) / 3);
+    height: auto;
+  }
+
+  .tail {
+    padding-top: 3rem;
+    padding-bottom: 5rem;
+  }
+
+  .back {
+    display: inline-block;
+    font-size: 0.9rem;
+    text-decoration: none;
+  }
+
+  @media (max-width: 900px) {
+    .stills img {
+      width: calc((100% - 1.75rem) / 2);
+    }
+
+    .note-poster.match-stills {
+      width: calc((100% - 1.75rem) / 2);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .stills img {
+      width: 100%;
+    }
+
+    .note-poster.match-stills {
+      width: 100%;
+    }
+
+    .slider-nav {
+      font-size: 2rem;
+    }
+  }
+</style>

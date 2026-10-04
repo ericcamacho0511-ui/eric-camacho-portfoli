@@ -1,0 +1,205 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { getCollection } from "astro:content";
+import { locales, t, ui, typeLabel, roleLabel, type Locale } from "../../i18n/ui";
+
+export function getStaticPaths() {
+  return locales.map((locale) => ({ params: { locale } }));
+}
+
+const { locale } = Astro.params as { locale: Locale };
+
+const allWork = (await getCollection("work")).sort((a, b) => a.data.order - b.data.order);
+---
+
+<Layout title="Home" locale={locale} footerFlush>
+  <section class="hero wrap">
+    <h1 class="hero-title">{t(ui.home.heroTitle, locale)}</h1>
+  </section>
+
+  <div class="reel">
+    {
+      allWork.map((project) => {
+        const { bgVideo, stills, cover, title } = project.data;
+        const useSlider = !bgVideo && stills.length > 1;
+        return (
+          <a href={`/${locale}/work/${project.id}`} class="reel-section">
+            {bgVideo ? (
+              <video
+                class="reel-bg"
+                src={bgVideo}
+                poster={cover}
+                muted
+                loop
+                playsinline
+                preload="metadata"
+                data-hover-video
+              />
+            ) : useSlider ? (
+              <div class="reel-slider">
+                {stills.map((still, i) => (
+                  <img
+                    src={still}
+                    alt={title}
+                    class="reel-bg slide"
+                    class:list={[{ "is-active": i === 0 }]}
+                  />
+                ))}
+              </div>
+            ) : (
+              <img src={cover} alt={title} class="reel-bg" />
+            )}
+            <div class="reel-overlay" />
+            <div class="reel-content wrap">
+              <span class="reel-title font-display">{title}</span>
+              <span class="reel-meta">
+                {typeLabel(project.data.type, locale)} · {roleLabel(project.data.role, locale)} ·{" "}
+                {project.data.year}
+              </span>
+            </div>
+          </a>
+        );
+      })
+    }
+  </div>
+</Layout>
+
+<script>
+  // Anyone who's told the OS they prefer reduced motion doesn't get the
+  // continuous slide crossfade or the hover-triggered video loop — both
+  // are ambient motion, not something the user asked to happen.
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Cross-fades the still images inside any .reel-slider — used for
+  // photo-only projects (e.g. a photobook) that have no background video.
+  // Re-runs on "astro:page-load" (fires on first load AND after every
+  // client-side page transition) so it still finds and binds to the
+  // reel-sliders when you navigate back to Home via the ClientRouter,
+  // since that swap doesn't re-execute this script on its own.
+  document.addEventListener("astro:page-load", () => {
+    if (reduceMotion) return;
+    document.querySelectorAll<HTMLElement>(".reel-slider").forEach((slider) => {
+      const slides = slider.querySelectorAll<HTMLElement>(".slide");
+      if (slides.length < 2 || slider.dataset.crossfadeBound) return;
+      slider.dataset.crossfadeBound = "true";
+      let index = 0;
+      setInterval(() => {
+        slides[index].classList.remove("is-active");
+        index = (index + 1) % slides.length;
+        slides[index].classList.add("is-active");
+      }, 3200);
+    });
+  });
+
+  // Cover videos only play while the mouse is over that section — muted,
+  // looping, and reset back to the poster frame on mouse-out. Delegated on
+  // document (rather than attached per-section) so it keeps working even
+  // if the reel markup gets swapped out after this script first runs.
+  document.addEventListener("mouseover", (e) => {
+    if (reduceMotion) return;
+    const section = (e.target as HTMLElement).closest<HTMLElement>(".reel-section");
+    if (!section || section.contains(e.relatedTarget as Node)) return;
+    section.querySelector<HTMLVideoElement>("[data-hover-video]")?.play().catch(() => {});
+  });
+
+  document.addEventListener("mouseout", (e) => {
+    const section = (e.target as HTMLElement).closest<HTMLElement>(".reel-section");
+    if (!section || section.contains(e.relatedTarget as Node)) return;
+    const video = section.querySelector<HTMLVideoElement>("[data-hover-video]");
+    if (!video) return;
+    video.pause();
+    video.currentTime = 0;
+  });
+</script>
+
+<style>
+  .hero {
+    padding-top: 2.5rem;
+    padding-bottom: 4rem;
+    max-width: 900px;
+  }
+
+  .hero-title {
+    font-size: clamp(2.8rem, 6.5vw, 4.6rem);
+    margin-top: 0.75rem;
+  }
+
+  .reel {
+    scroll-snap-type: y proximity;
+  }
+
+  .reel-section {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 92vh;
+    min-height: 480px;
+    color: #f5f2ea;
+    text-decoration: none;
+    overflow: hidden;
+    scroll-snap-align: start;
+  }
+
+  .reel-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.7s ease;
+  }
+
+  .reel-section:hover .reel-bg {
+    transform: scale(1.04);
+  }
+
+  .reel-slider {
+    position: absolute;
+    inset: 0;
+  }
+
+  .reel-slider .slide {
+    position: absolute;
+    opacity: 0;
+    transition: opacity 1.2s ease;
+  }
+
+  .reel-slider .slide.is-active {
+    opacity: 1;
+  }
+
+  .reel-overlay {
+    position: absolute;
+    inset: 0;
+    /* Even, center-weighted darkening — the title now sits in the middle
+       of the frame rather than anchored to the bottom, so it needs
+       contrast there instead of just along the lower edge. */
+    background: radial-gradient(ellipse at center, rgba(15, 13, 10, 0.5) 0%, rgba(15, 13, 10, 0.3) 65%, rgba(15, 13, 10, 0.4) 100%);
+  }
+
+  .reel-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .reel-title {
+    font-family: var(--font-title);
+    font-size: clamp(3.5rem, 11vw, 8.5rem);
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .reel-meta {
+    font-size: clamp(0.85rem, 1vw, 1rem);
+    letter-spacing: 0.04em;
+    text-transform: lowercase;
+    opacity: 0.85;
+  }
+</style>

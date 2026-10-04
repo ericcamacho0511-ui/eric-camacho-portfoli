@@ -1,0 +1,70 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { locales, t, ui, type Locale } from "../../i18n/ui";
+
+export function getStaticPaths() {
+  return locales.map((locale) => ({ params: { locale } }));
+}
+
+const { locale } = Astro.params as { locale: Locale };
+---
+
+<Layout title="Contact" locale={locale}>
+  <section class="wrap head">
+    <p class="eyebrow">{t(ui.contact.eyebrow, locale)}</p>
+    <h1>{t(ui.contact.heading, locale)}</h1>
+    <div class="contact-list">
+      <a
+        href="mailto:ericcamacho0511@gmail.com"
+        class="contact-link font-display link-underline"
+        data-reveal
+      >
+        ericcamacho0511@gmail.com
+      </a>
+      <a href="tel:+34637548797" class="contact-link font-display link-underline" data-reveal>
+        +34&nbsp;637&nbsp;548&nbsp;797
+      </a>
+      <a
+        href="https://instagram.com/____ericamacho"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="contact-link font-display link-underline"
+        data-reveal
+      >
+        @____ericamacho
+      </a>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  import { setupReveal } from "../../lib/reveal";
+  document.addEventListener("astro:page-load", setupReveal);
+</script>
+
+<style>
+  .head {
+    padding-top: 3rem;
+    padding-bottom: 6rem;
+    max-width: 800px;
+  }
+
+  .head h1 {
+    font-size: clamp(2.8rem, 6.5vw, 4.6rem);
+    margin-top: 0.5rem;
+  }
+
+  .contact-list {
+    margin-top: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    align-items: flex-start;
+  }
+
+  .contact-link {
+    display: inline-block;
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    text-decoration: none;
+  }
+</style>

@@ -1,0 +1,51 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { locales, t, ui, type Locale } from "../../i18n/ui";
+
+export function getStaticPaths() {
+  return locales.map((locale) => ({ params: { locale } }));
+}
+
+const { locale } = Astro.params as { locale: Locale };
+---
+
+<Layout title="About" locale={locale}>
+  <section class="wrap head">
+    <p class="eyebrow">{t(ui.about.eyebrow, locale)}</p>
+    <h1>Èric Camacho</h1>
+
+    <div class="bio font-display">
+      {ui.about.bio.map((paragraph) => (
+        <p data-reveal>{t(paragraph, locale)}</p>
+      ))}
+    </div>
+  </section>
+</Layout>
+
+<script>
+  import { setupReveal } from "../../lib/reveal";
+  document.addEventListener("astro:page-load", setupReveal);
+</script>
+
+<style>
+  .head {
+    padding-top: 3rem;
+    padding-bottom: 6rem;
+    max-width: 800px;
+  }
+
+  .head h1 {
+    font-size: clamp(2.8rem, 6.5vw, 4.6rem);
+    margin-top: 0.5rem;
+  }
+
+  .bio {
+    margin-top: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    font-size: 1.4rem;
+    line-height: 1.55;
+    font-weight: 400;
+  }
+</style>

@@ -1,0 +1,263 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import { getCollection } from "astro:content";
+import { locales, t, ui, typeLabel, roleLabel, type Locale } from "../../../i18n/ui";
+
+export function getStaticPaths() {
+  return locales.map((locale) => ({ params: { locale } }));
+}
+
+const { locale } = Astro.params as { locale: Locale };
+
+const allWork = (await getCollection("work")).sort((a, b) => a.data.order - b.data.order);
+const upcoming = (await getCollection("upcoming")).sort((a, b) => a.data.order - b.data.order);
+
+// Smaller student/assistant credits — transcribed from your project list.
+// Shown as a plain list below Upcoming, not as full case studies. All short
+// films.
+const otherExperience: { title: string; role: string; director: string; year: number }[] = [
+  { title: "Splash", role: "Producer", director: "Mimi Gutiérrez and Inés Garriga", year: 2024 },
+  { title: "Fràgils", role: "Producer", director: "Daniela Mumbrú and Clàudia Paz", year: 2024 },
+  { title: "La Virgen del Roble", role: "Producer", director: "Mimi Gutiérrez", year: 2025 },
+  {
+    title: "Els Monstres també estimen",
+    role: "Production assistant",
+    director: "Daniela Mumbrú",
+    year: 2025,
+  },
+  { title: "A les Fosques", role: "Producer", director: "Inés Garriga", year: 2025 },
+  { title: "Èdip Rei", role: "1st AD", director: "Pia Vargas", year: 2025 },
+  { title: "Guaret", role: "Production manager", director: "Inés Garriga", year: 2025 },
+  { title: "Mita", role: "Production assistant", director: "Daniela Mumbrú", year: 2025 },
+  { title: "Testigo", role: "Production assistant", director: "Aixa Guerrero", year: 2026 },
+  { title: "Impunitat", role: "Production assistant", director: "Clàudia Paz", year: 2026 },
+];
+---
+
+<Layout title="Work" locale={locale}>
+  <section class="wrap head">
+    <p class="eyebrow">{t(ui.work.eyebrow, locale)}</p>
+    <h1>{t(ui.work.heading, locale)}</h1>
+  </section>
+
+  <section class="wrap">
+    <div class="grid">
+      {
+        allWork.map((project) => (
+          <a href={`/${locale}/work/${project.id}`} class="card" data-reveal>
+            <img
+              src={project.data.stills[0] ?? project.data.cover}
+              alt={project.data.title}
+            />
+            <div class="card-meta">
+              <span class="font-display card-title">{project.data.title}</span>
+              <span class="card-sub">
+                {typeLabel(project.data.type, locale)} · {project.data.year}
+              </span>
+            </div>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  {
+    upcoming.length > 0 && (
+      <section class="wrap upcoming">
+        <p class="eyebrow">{t(ui.work.upcoming, locale)}</p>
+        <ul class="upcoming-list">
+          {upcoming.map((project) => (
+            <li data-reveal>
+              <span class="font-display upcoming-title">{project.data.title}</span>
+              <span class="upcoming-sub">
+                {typeLabel(project.data.type, locale)} · {roleLabel(project.data.role, locale)}
+                {project.data.director && ` · ${t(ui.project.dir, locale)} ${project.data.director}`} ·{" "}
+                {project.data.year}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  <section class="wrap other">
+    <p class="eyebrow">{t(ui.work.otherExperience, locale)}</p>
+    <ul class="other-list">
+      {
+        otherExperience.map((item) => (
+          <li data-reveal>
+            <span class="font-display other-title">{item.title}</span>
+            <span class="other-sub">
+              {typeLabel("Short film", locale)} · {roleLabel(item.role, locale)} ·{" "}
+              {t(ui.project.dir, locale)} {item.director} · {item.year}
+            </span>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</Layout>
+
+<script>
+  import { setupReveal } from "../../../lib/reveal";
+  document.addEventListener("astro:page-load", setupReveal);
+</script>
+
+<style>
+  .head {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+    max-width: 800px;
+  }
+
+  .head h1 {
+    font-size: clamp(2.8rem, 6.5vw, 4.6rem);
+    margin-top: 0.5rem;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2.5rem;
+    padding-bottom: 2rem;
+  }
+
+  .card {
+    display: block;
+    text-decoration: none;
+    color: var(--fg);
+    transition: transform 0.25s ease;
+  }
+
+  .card img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    margin-bottom: 0.75rem;
+    transition:
+      opacity 0.25s ease,
+      transform 0.4s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-4px);
+  }
+
+  .card:hover img {
+    opacity: 0.85;
+    transform: scale(1.03);
+  }
+
+  .card:active {
+    transform: translateY(-1px) scale(0.99);
+  }
+
+  .card-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .card-title {
+    font-family: var(--font-title);
+    font-size: 1.25rem;
+    color: var(--title);
+    text-transform: none;
+  }
+
+  .card-sub {
+    color: var(--fg-muted);
+    font-size: 0.85rem;
+  }
+
+  .upcoming {
+    padding-top: 4rem;
+    padding-bottom: 6rem;
+    border-top: 1px solid var(--border);
+    margin-top: 3rem;
+  }
+
+  .upcoming .eyebrow,
+  .other .eyebrow {
+    font-family: var(--font-title);
+    font-size: 1.5rem;
+    color: var(--title);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .upcoming-list {
+    list-style: none;
+    margin: 1.5rem 0 0;
+    padding: 0;
+  }
+
+  .upcoming-list li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem 1.5rem;
+    padding: 1.1rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .upcoming-title {
+    font-family: var(--font-title);
+    font-size: 1.25rem;
+    color: var(--fg);
+    text-transform: none;
+  }
+
+  .upcoming-sub {
+    color: var(--fg-muted);
+    font-size: 0.85rem;
+  }
+
+  .other {
+    padding-top: 3rem;
+    padding-bottom: 6rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .other-list {
+    list-style: none;
+    margin: 1.5rem 0 0;
+    padding: 0;
+  }
+
+  .other-list li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem 1.5rem;
+    padding: 1.1rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .other-title {
+    font-family: var(--font-title);
+    font-size: 1.25rem;
+    color: var(--fg);
+    text-transform: none;
+  }
+
+  .other-sub {
+    color: var(--fg-muted);
+    font-size: 0.85rem;
+  }
+
+  @media (max-width: 720px) {
+    .grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

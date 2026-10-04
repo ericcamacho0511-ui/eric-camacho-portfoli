@@ -73,6 +73,16 @@ export const ui = {
       en: "Èric Camacho, audiovisual producer. Short films and music videos, produced from the ground up.",
     },
   },
+  notFound: {
+    eyebrow: { ca: "Error 404", es: "Error 404", en: "Error 404" },
+    heading: { ca: "Pàgina no trobada.", es: "Página no encontrada.", en: "Page not found." },
+    body: {
+      ca: "Aquesta pàgina no existeix o s’ha mogut d’adreça.",
+      es: "Esta página no existe o se ha movido de dirección.",
+      en: "This page doesn’t exist, or it moved somewhere else.",
+    },
+    cta: { ca: "Torna a l’inici", es: "Volver al inicio", en: "Back to home" },
+  },
 } as const;
 
 // Small closed vocabularies reused across many projects — translated once

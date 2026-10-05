@@ -11,13 +11,17 @@ const { locale } = Astro.params as { locale: Locale };
 
 <Layout title="About" locale={locale}>
   <section class="wrap head">
-    <p class="eyebrow">{t(ui.about.eyebrow, locale)}</p>
-    <h1>Èric Camacho</h1>
+    <img src="/images/about/eric.jpg" alt="Èric Camacho" class="portrait" data-reveal />
 
-    <div class="bio font-display">
-      {ui.about.bio.map((paragraph) => (
-        <p data-reveal>{t(paragraph, locale)}</p>
-      ))}
+    <div class="intro">
+      <p class="eyebrow">{t(ui.about.eyebrow, locale)}</p>
+      <h1>Èric Camacho</h1>
+
+      <div class="bio font-display">
+        {ui.about.bio.map((paragraph) => (
+          <p data-reveal>{t(paragraph, locale)}</p>
+        ))}
+      </div>
     </div>
   </section>
 </Layout>
@@ -31,7 +35,18 @@ const { locale } = Astro.params as { locale: Locale };
   .head {
     padding-top: 3rem;
     padding-bottom: 6rem;
-    max-width: 800px;
+    max-width: 1080px;
+    display: grid;
+    grid-template-columns: minmax(220px, 320px) 1fr;
+    gap: 3rem;
+    align-items: start;
+  }
+
+  .portrait {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    object-position: top center;
   }
 
   .head h1 {
@@ -47,5 +62,16 @@ const { locale } = Astro.params as { locale: Locale };
     font-size: 1.4rem;
     line-height: 1.55;
     font-weight: 400;
+  }
+
+  @media (max-width: 720px) {
+    .head {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+
+    .portrait {
+      max-width: 280px;
+    }
   }
 </style>

@@ -33,6 +33,7 @@ export function setupScrollStage() {
   const goTo = (next: number) => {
     next = Math.max(0, Math.min(slides.length - 1, next));
     if (next === index) return;
+    const previousIndex = index;
     index = next;
     track.style.transform = `translateY(-${index * 100}%)`;
     locked = true;
@@ -40,6 +41,7 @@ export function setupScrollStage() {
     unlockTimer = window.setTimeout(() => {
       locked = false;
     }, TRANSITION_MS);
+    stage.dispatchEvent(new CustomEvent("slidechange", { detail: { index, previousIndex } }));
   };
 
   const onWheel = (e: WheelEvent) => {

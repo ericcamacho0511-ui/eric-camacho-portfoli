@@ -108,20 +108,45 @@ const allWork = (await getCollection("work")).sort((a, b) => a.data.order - b.da
   // looping, and reset back to the poster frame on mouse-out. Delegated on
   // document (rather than attached per-section) so it keeps working even
   // if the reel markup gets swapped out after this script first runs.
+  // Skipped once the locked scroll-stage is active (below): with one slide
+  // visible at a time, a real cursor can still wander off it (e.g. onto
+  // the nav) without that meaning "not looking at this project anymore",
+  // and there's no cursor at all on touch devices — slide activation
+  // drives playback there instead.
   document.addEventListener("mouseover", (e) => {
-    if (reduceMotion) return;
+    if (reduceMotion || document.documentElement.classList.contains("scroll-stage")) return;
     const section = (e.target as HTMLElement).closest<HTMLElement>(".reel-section");
     if (!section || section.contains(e.relatedTarget as Node)) return;
     section.querySelector<HTMLVideoElement>("[data-hover-video]")?.play().catch(() => {});
   });
 
   document.addEventListener("mouseout", (e) => {
+    if (document.documentElement.classList.contains("scroll-stage")) return;
     const section = (e.target as HTMLElement).closest<HTMLElement>(".reel-section");
     if (!section || section.contains(e.relatedTarget as Node)) return;
     const video = section.querySelector<HTMLVideoElement>("[data-hover-video]");
     if (!video) return;
     video.pause();
     video.currentTime = 0;
+  });
+
+  // While the scroll-stage is locked, a project's cover video plays for as
+  // long as — and only while — its slide is the one on screen, so it works
+  // identically on a trackpad and on a phone with no cursor at all.
+  document.addEventListener("astro:page-load", () => {
+    const stage = document.querySelector<HTMLElement>("#stage");
+    if (!stage || stage.dataset.videoBound) return;
+    stage.dataset.videoBound = "true";
+    stage.addEventListener("slidechange", ((e: CustomEvent<{ index: number; previousIndex: number }>) => {
+      if (reduceMotion) return;
+      const slides = document.querySelectorAll<HTMLElement>("#stage-track > .slide");
+      const prevVideo = slides[e.detail.previousIndex]?.querySelector<HTMLVideoElement>("[data-hover-video]");
+      if (prevVideo) {
+        prevVideo.pause();
+        prevVideo.currentTime = 0;
+      }
+      slides[e.detail.index]?.querySelector<HTMLVideoElement>("[data-hover-video]")?.play().catch(() => {});
+    }) as EventListener);
   });
 
   document.addEventListener("astro:page-load", setupScrollStage);

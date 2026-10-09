@@ -21,10 +21,11 @@ export const ui = {
   },
   home: {
     heroTitle: {
-      ca: "Productor audiovisual, Barcelona.",
-      es: "Productor audiovisual, Barcelona.",
-      en: "Audiovisual producer, Barcelona.",
+      ca: "Productor audiovisual a Barcelona. Ambició jove, projectes des de zero.",
+      es: "Productor audiovisual en Barcelona. Ambición joven, proyectos desde cero.",
+      en: "Audiovisual producer in Barcelona. Young ambition, projects from scratch.",
     },
+    scrollCue: { ca: "desplaça", es: "desplaza", en: "scroll" },
   },
   work: {
     eyebrow: { ca: "Treballs", es: "Trabajos", en: "Work" },

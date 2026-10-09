@@ -12,62 +12,75 @@ const { locale } = Astro.params as { locale: Locale };
 const allWork = (await getCollection("work")).sort((a, b) => a.data.order - b.data.order);
 ---
 
-<Layout title="Home" locale={locale} footerFlush>
-  <section class="hero wrap">
-    <h1 class="hero-title">{t(ui.home.heroTitle, locale)}</h1>
-  </section>
+<Layout title="Home" locale={locale} noFooter>
+  <div class="stage" id="stage">
+    <div class="stage-track" id="stage-track">
+      <section class="slide hero-slide">
+        <div class="wrap">
+          <h1 class="hero-title">{t(ui.home.heroTitle, locale)}</h1>
+        </div>
+        <div class="scroll-cue" aria-hidden="true">
+          <span class="scroll-cue-label">{t(ui.home.scrollCue, locale)}</span>
+          <svg class="scroll-cue-arrow" viewBox="0 0 16 9" fill="none">
+            <path d="M1 1l7 7 7-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </div>
+      </section>
 
-  <div class="reel">
-    {
-      allWork.map((project) => {
-        const { bgVideo, stills, cover, title } = project.data;
-        const useSlider = !bgVideo && stills.length > 1;
-        return (
-          <a href={`/${locale}/work/${project.id}`} class="reel-section">
-            {bgVideo ? (
-              <video
-                class="reel-bg"
-                src={bgVideo}
-                poster={cover}
-                muted
-                loop
-                playsinline
-                preload="metadata"
-                data-hover-video
-              />
-            ) : useSlider ? (
-              <div class="reel-slider">
-                {stills.map((still, i) => (
-                  <img
-                    src={still}
-                    alt={title}
-                    class="reel-bg slide"
-                    class:list={[{ "is-active": i === 0 }]}
-                  />
-                ))}
+      {
+        allWork.map((project) => {
+          const { bgVideo, stills, cover, title } = project.data;
+          const useSlider = !bgVideo && stills.length > 1;
+          return (
+            <a href={`/${locale}/work/${project.id}`} class="slide reel-section">
+              {bgVideo ? (
+                <video
+                  class="reel-bg"
+                  src={bgVideo}
+                  poster={cover}
+                  muted
+                  loop
+                  playsinline
+                  preload="metadata"
+                  data-hover-video
+                />
+              ) : useSlider ? (
+                <div class="reel-slider">
+                  {stills.map((still, i) => (
+                    <img
+                      src={still}
+                      alt={title}
+                      class="reel-bg slide"
+                      class:list={[{ "is-active": i === 0 }]}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <img src={cover} alt={title} class="reel-bg" />
+              )}
+              <div class="reel-overlay" />
+              <div class="reel-content wrap">
+                <span class="reel-title font-display">{title}</span>
+                <span class="reel-meta">
+                  {typeLabel(project.data.type, locale)} · {roleLabel(project.data.role, locale)} ·{" "}
+                  {project.data.year}
+                </span>
               </div>
-            ) : (
-              <img src={cover} alt={title} class="reel-bg" />
-            )}
-            <div class="reel-overlay" />
-            <div class="reel-content wrap">
-              <span class="reel-title font-display">{title}</span>
-              <span class="reel-meta">
-                {typeLabel(project.data.type, locale)} · {roleLabel(project.data.role, locale)} ·{" "}
-                {project.data.year}
-              </span>
-            </div>
-          </a>
-        );
-      })
-    }
+            </a>
+          );
+        })
+      }
+    </div>
   </div>
 </Layout>
 
 <script>
+  import { setupScrollStage, teardownScrollStage } from "../../lib/scrollStage";
+
   // Anyone who's told the OS they prefer reduced motion doesn't get the
-  // continuous slide crossfade or the hover-triggered video loop — both
-  // are ambient motion, not something the user asked to happen.
+  // continuous slide crossfade, the hover-triggered video loop, or the
+  // locked one-screen-per-project scroll — all three are ambient/forced
+  // motion, not something the user asked to happen.
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   // Cross-fades the still images inside any .reel-slider — used for
@@ -110,22 +123,65 @@ const allWork = (await getCollection("work")).sort((a, b) => a.data.order - b.da
     video.pause();
     video.currentTime = 0;
   });
+
+  document.addEventListener("astro:page-load", setupScrollStage);
+  document.addEventListener("astro:before-swap", teardownScrollStage);
 </script>
 
 <style>
-  .hero {
-    padding-top: 2.5rem;
-    padding-bottom: 4rem;
-    max-width: 900px;
+  .stage {
+    position: relative;
+  }
+
+  .slide {
+    min-height: 100dvh;
+  }
+
+  .hero-slide {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: var(--bg);
   }
 
   .hero-title {
     font-size: clamp(2.8rem, 6.5vw, 4.6rem);
-    margin-top: 0.75rem;
   }
 
-  .reel {
-    scroll-snap-type: y proximity;
+  .scroll-cue {
+    position: absolute;
+    bottom: 2.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--fg-muted);
+  }
+
+  .scroll-cue-label {
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: lowercase;
+  }
+
+  .scroll-cue-arrow {
+    width: 16px;
+    height: 9px;
+    animation: scroll-cue-bounce 1.8s ease-in-out infinite;
+  }
+
+  @keyframes scroll-cue-bounce {
+    0%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.5;
+    }
+    50% {
+      transform: translateY(5px);
+      opacity: 1;
+    }
   }
 
   .reel-section {
@@ -133,12 +189,10 @@ const allWork = (await getCollection("work")).sort((a, b) => a.data.order - b.da
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 92vh;
-    min-height: 480px;
+    height: 100dvh;
     color: #f5f2ea;
     text-decoration: none;
     overflow: hidden;
-    scroll-snap-align: start;
   }
 
   .reel-bg {
@@ -161,6 +215,7 @@ const allWork = (await getCollection("work")).sort((a, b) => a.data.order - b.da
 
   .reel-slider .slide {
     position: absolute;
+    min-height: 0;
     opacity: 0;
     transition: opacity 1.2s ease;
   }
@@ -172,9 +227,9 @@ const allWork = (await getCollection("work")).sort((a, b) => a.data.order - b.da
   .reel-overlay {
     position: absolute;
     inset: 0;
-    /* Even, center-weighted darkening — the title now sits in the middle
-       of the frame rather than anchored to the bottom, so it needs
-       contrast there instead of just along the lower edge. */
+    /* Even, center-weighted darkening — the title sits in the middle of
+       the frame rather than anchored to the bottom, so it needs contrast
+       there instead of just along the lower edge. */
     background: radial-gradient(ellipse at center, rgba(15, 13, 10, 0.5) 0%, rgba(15, 13, 10, 0.3) 65%, rgba(15, 13, 10, 0.4) 100%);
   }
 
@@ -201,5 +256,33 @@ const allWork = (await getCollection("work")).sort((a, b) => a.data.order - b.da
     letter-spacing: 0.04em;
     text-transform: lowercase;
     opacity: 0.85;
+  }
+
+  /* Locked, one-screen-per-project presentation — added by scrollStage.ts
+     only when JS has run and the visitor doesn't prefer reduced motion.
+     Without this class the slides above are just a normal tall page. */
+  :global(html.scroll-stage) body {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  :global(html.scroll-stage) .stage {
+    position: fixed;
+    top: var(--nav-h, 0px);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+  }
+
+  :global(html.scroll-stage) .stage-track {
+    height: 100%;
+    transition: transform 0.85s cubic-bezier(0.645, 0.045, 0.355, 1);
+    will-change: transform;
+  }
+
+  :global(html.scroll-stage) .slide {
+    height: 100%;
+    min-height: 0;
   }
 </style>

@@ -11,6 +11,7 @@ interface Props {
   description?: string;
   footerFlush?: boolean;
   noFooter?: boolean;
+  overlayNav?: boolean;
 }
 
 const {
@@ -19,11 +20,12 @@ const {
   description = t(ui.meta.description, locale),
   footerFlush = false,
   noFooter = false,
+  overlayNav = false,
 } = Astro.props;
 
 const pageTitle = `${title} - Èric Camacho`;
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
-const ogImageURL = new URL("/og-image.jpg", Astro.site);
+const ogImageURL = new URL(`/og-${locale}.jpg`, Astro.site);
 const ogLocales: Record<Locale, string> = { ca: "ca_ES", es: "es_ES", en: "en_US" };
 ---
 
@@ -32,7 +34,10 @@ const ogLocales: Record<Locale, string> = { ca: "ca_ES", es: "es_ES", en: "en_US
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="canonical" href={canonicalURL} />
     <meta name="description" content={description} />
     <title>{pageTitle}</title>
@@ -52,16 +57,14 @@ const ogLocales: Record<Locale, string> = { ca: "ca_ES", es: "es_ES", en: "en_US
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageURL} />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Inter:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
+    <meta name="theme-color" content="#000000" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="apple-mobile-web-app-title" content="Èric Camacho" />
+    <link rel="preload" href="/fonts/archivo/Archivo-VF.woff2" as="font" type="font/woff2" crossorigin />
     <ClientRouter />
   </head>
   <body>
-    <Nav locale={locale} />
+    <Nav locale={locale} overlay={overlayNav} />
     <main>
       <slot />
     </main>

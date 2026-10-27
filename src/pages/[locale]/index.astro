@@ -10,16 +10,34 @@ export function getStaticPaths() {
 const { locale } = Astro.params as { locale: Locale };
 
 const allWork = (await getCollection("work")).sort((a, b) => a.data.order - b.data.order);
+
+// The opening frame is a short montage cut from every project's video,
+// stripped of colour — it comes back as you move into the projects.
+const [heroLineA, heroLineB] = t(ui.home.heroTitle, locale).split(/(?<=\.)\s+/);
 ---
 
 <Layout title="Home" locale={locale} noFooter>
   <div class="stage" id="stage">
     <div class="stage-track" id="stage-track">
       <section class="slide hero-slide">
-        <div class="wrap">
-          <h1 class="hero-title">{t(ui.home.heroTitle, locale)}</h1>
+        <div class="hero-bg" aria-hidden="true">
+          <video
+            src="/images/hero/reel.mp4"
+            poster="/images/hero/reel.jpg"
+            muted
+            loop
+            playsinline
+            preload="auto"
+            data-hover-video
+          />
         </div>
-        <div class="scroll-cue" aria-hidden="true">
+        <div class="wrap hero-inner">
+          <h1 class="hero-title">
+            <span class="line">{heroLineA}</span>
+            {heroLineB && <span class="line">{heroLineB}</span>}
+          </h1>
+        </div>
+        <div class="wrap scroll-cue" aria-hidden="true">
           <span class="scroll-cue-label">{t(ui.home.scrollCue, locale)}</span>
           <svg class="scroll-cue-arrow" viewBox="0 0 16 9" fill="none">
             <path d="M1 1l7 7 7-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
@@ -61,9 +79,10 @@ const allWork = (await getCollection("work")).sort((a, b) => a.data.order - b.da
               <div class="reel-overlay" />
               <div class="reel-content wrap">
                 <span class="reel-title font-display">{title}</span>
-                <span class="reel-meta">
-                  {typeLabel(project.data.type, locale)} · {roleLabel(project.data.role, locale)} ·{" "}
-                  {project.data.year}
+                <span class="reel-credits">
+                  <span>{typeLabel(project.data.type, locale)}</span>
+                  <span>{roleLabel(project.data.role, locale)}</span>
+                  <span>{project.data.year}</span>
                 </span>
               </div>
             </a>
@@ -72,6 +91,17 @@ const allWork = (await getCollection("work")).sort((a, b) => a.data.order - b.da
       }
     </div>
   </div>
+
+  <nav class="rail" aria-label={t(ui.home.railLabel, locale)}>
+    {
+      allWork.map((project, i) => (
+        <button type="button" class="rail-item" data-goto={i + 1}>
+          <span class="rail-label">{project.data.title}</span>
+          <span class="rail-tick" aria-hidden="true" />
+        </button>
+      ))
+    }
+  </nav>
 </Layout>
 
 <script>
@@ -130,14 +160,36 @@ const allWork = (await getCollection("work")).sort((a, b) => a.data.order - b.da
     video.currentTime = 0;
   });
 
-  // While the scroll-stage is locked, a project's cover video plays for as
-  // long as — and only while — its slide is the one on screen, so it works
-  // identically on a trackpad and on a phone with no cursor at all.
+  // While the scroll-stage is locked, a slide's video plays for as long
+  // as — and only while — that slide is the one on screen, so it works
+  // identically on a trackpad and on a phone with no cursor at all. The
+  // same event keeps the project rail's active marker in step.
   document.addEventListener("astro:page-load", () => {
     const stage = document.querySelector<HTMLElement>("#stage");
     if (!stage || stage.dataset.videoBound) return;
     stage.dataset.videoBound = "true";
+
+    const railItems = document.querySelectorAll<HTMLElement>(".rail-item");
+    railItems.forEach((item) => {
+      item.addEventListener("click", () => {
+        stage.dispatchEvent(
+          new CustomEvent("stage:goto", { detail: { index: Number(item.dataset.goto) } }),
+        );
+      });
+    });
+
+    if (!reduceMotion) {
+      document.querySelector<HTMLVideoElement>(".hero-slide [data-hover-video]")?.play().catch(() => {});
+    }
+
     stage.addEventListener("slidechange", ((e: CustomEvent<{ index: number; previousIndex: number }>) => {
+      railItems.forEach((item) => {
+        const active = Number(item.dataset.goto) === e.detail.index;
+        item.classList.toggle("is-active", active);
+        if (active) item.setAttribute("aria-current", "true");
+        else item.removeAttribute("aria-current");
+      });
+
       if (reduceMotion) return;
       const slides = document.querySelectorAll<HTMLElement>("#stage-track > .slide");
       const prevVideo = slides[e.detail.previousIndex]?.querySelector<HTMLVideoElement>("[data-hover-video]");
@@ -162,27 +214,102 @@ const allWork = (await getCollection("work")).sort((a, b) => a.data.order - b.da
     min-height: 100dvh;
   }
 
+  /* Opening frame: one project's footage reduced to olive and black
+     (multiplied over the brand colour), type set low and large on the
+     same left edge as the wordmark. */
   .hero-slide {
     position: relative;
     display: flex;
-    align-items: center;
-    background: var(--bg);
+    align-items: flex-end;
+    overflow: hidden;
+    background: #000;
+    color: var(--fg);
+  }
+
+  /* The reel is a mood, not a screening: slightly out of focus and grainy,
+     so the type reads cleanly over it and the footage invites a closer
+     look. Scaled a touch so the blur never feathers at the frame edges. */
+  .hero-bg {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    overflow: hidden;
+    background: #000;
+  }
+
+  .hero-bg video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(1) contrast(1.1) blur(3px);
+    transform: scale(1.08);
+  }
+
+  .hero-bg::before {
+    content: "";
+    position: absolute;
+    z-index: 1;
+    inset: -50%;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 240px 240px;
+    opacity: 0.16;
+    pointer-events: none;
+    animation: grain 0.9s steps(1) infinite;
+  }
+
+  @keyframes grain {
+    0% {
+      transform: translate(0, 0);
+    }
+    20% {
+      transform: translate(-7%, 5%);
+    }
+    40% {
+      transform: translate(5%, -8%);
+    }
+    60% {
+      transform: translate(-4%, -3%);
+    }
+    80% {
+      transform: translate(8%, 6%);
+    }
+  }
+
+  .hero-bg::after {
+    content: "";
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.15) 60%, rgba(0, 0, 0, 0.25) 100%);
+  }
+
+  .hero-inner {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    padding-bottom: clamp(4.5rem, 14vh, 8rem);
   }
 
   .hero-title {
-    font-size: clamp(2.8rem, 6.5vw, 4.6rem);
+    color: var(--fg);
+    font-size: clamp(2.6rem, 6.4vw, 6rem);
+    line-height: 1.02;
+  }
+
+  .hero-title .line {
+    display: block;
   }
 
   .scroll-cue {
     position: absolute;
-    bottom: 2.5rem;
-    left: 50%;
-    transform: translateX(-50%);
+    z-index: 1;
+    left: 0;
+    right: 0;
+    bottom: 1.75rem;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 0.6rem;
-    color: var(--fg-muted);
+    gap: 0.7rem;
+    color: rgba(250, 249, 246, 0.8);
   }
 
   .scroll-cue-label {
@@ -209,12 +336,14 @@ const allWork = (await getCollection("work")).sort((a, b) => a.data.order - b.da
     }
   }
 
+  /* Project frames: the title sits low-left so it never covers the
+     subject, credits stack beside it like the end of a title card. */
   .reel-section {
     position: relative;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-end;
     height: 100dvh;
+    padding-bottom: clamp(2rem, 7vh, 4.5rem);
     color: #f5f2ea;
     text-decoration: none;
     overflow: hidden;
@@ -230,7 +359,7 @@ const allWork = (await getCollection("work")).sort((a, b) => a.data.order - b.da
   }
 
   .reel-section:hover .reel-bg {
-    transform: scale(1.04);
+    transform: scale(1.03);
   }
 
   .reel-slider {
@@ -249,55 +378,157 @@ const allWork = (await getCollection("work")).sort((a, b) => a.data.order - b.da
     opacity: 1;
   }
 
+  /* Darkest at the top (under the overlaid nav) and the bottom (under the
+     title); the middle of the frame stays as shot. */
   .reel-overlay {
     position: absolute;
     inset: 0;
-    /* Even, center-weighted darkening — the title sits in the middle of
-       the frame rather than anchored to the bottom, so it needs contrast
-       there instead of just along the lower edge. */
-    background: radial-gradient(ellipse at center, rgba(15, 13, 10, 0.5) 0%, rgba(15, 13, 10, 0.3) 65%, rgba(15, 13, 10, 0.4) 100%);
+    background: linear-gradient(
+      to bottom,
+      rgba(15, 13, 10, 0.45) 0%,
+      rgba(15, 13, 10, 0.05) 30%,
+      rgba(15, 13, 10, 0.1) 55%,
+      rgba(15, 13, 10, 0.7) 100%
+    );
   }
 
   .reel-content {
     position: relative;
     z-index: 1;
+    width: 100%;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-    text-align: center;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem 2rem;
   }
 
   .reel-title {
     font-family: var(--font-title);
     font-size: clamp(3.5rem, 11vw, 8.5rem);
-    line-height: 1;
+    line-height: 0.95;
     text-transform: uppercase;
     letter-spacing: 0.02em;
   }
 
-  .reel-meta {
+  .reel-credits {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding-bottom: 0.6rem;
     font-size: clamp(0.85rem, 1vw, 1rem);
     letter-spacing: 0.04em;
     text-transform: lowercase;
-    opacity: 0.85;
+    text-align: right;
+    opacity: 0.9;
+  }
+
+  /* Position along the sequence, and a way to jump: one tick per project,
+     the current one extended and named. */
+  .rail {
+    display: none;
+    position: fixed;
+    z-index: 20;
+    right: var(--gutter);
+    top: 50%;
+    transform: translateY(-50%);
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.15rem;
+  }
+
+  .rail-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.4rem 0;
+    border: 0;
+    background: none;
+    color: var(--fg);
+    font: inherit;
+    cursor: pointer;
+    text-shadow: 0 0 14px rgba(15, 13, 10, 0.7);
+  }
+
+  .rail-label {
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    text-transform: lowercase;
+    opacity: 0;
+    transform: translateX(6px);
+    transition:
+      opacity 0.25s ease,
+      transform 0.25s ease;
+  }
+
+  .rail-tick {
+    display: block;
+    width: 1.1rem;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.55;
+    transition:
+      width 0.3s ease,
+      opacity 0.3s ease;
+  }
+
+  .rail-item:hover .rail-label,
+  .rail-item:focus-visible .rail-label,
+  .rail-item.is-active .rail-label {
+    opacity: 1;
+    transform: none;
+  }
+
+  .rail-item:hover .rail-tick,
+  .rail-item:focus-visible .rail-tick {
+    opacity: 1;
+  }
+
+  .rail-item.is-active .rail-tick {
+    width: 2.4rem;
+    opacity: 1;
+  }
+
+  .rail-item:focus-visible {
+    outline: 2px solid var(--fg);
+    outline-offset: 4px;
+  }
+
+  @media (max-width: 700px) {
+    .rail {
+      right: 0.9rem;
+    }
+
+    .rail-label {
+      display: none;
+    }
+
+    .reel-content {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .reel-credits {
+      text-align: left;
+      padding-bottom: 0;
+    }
   }
 
   /* Locked, one-screen-per-project presentation — added by scrollStage.ts
      only when JS has run and the visitor doesn't prefer reduced motion.
-     Without this class the slides above are just a normal tall page. */
+     Without this class the slides above are just a normal tall page. The
+     stage runs edge to edge and the nav floats over the footage. */
   :global(html.scroll-stage) body {
     height: 100dvh;
     overflow: hidden;
+    overscroll-behavior: none;
   }
 
   :global(html.scroll-stage) .stage {
     position: fixed;
-    top: var(--nav-h, 0px);
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     overflow: hidden;
+    touch-action: pan-x pinch-zoom;
   }
 
   :global(html.scroll-stage) .stage-track {
@@ -309,5 +540,9 @@ const allWork = (await getCollection("work")).sort((a, b) => a.data.order - b.da
   :global(html.scroll-stage) .slide {
     height: 100%;
     min-height: 0;
+  }
+
+  :global(html.scroll-stage) .rail {
+    display: flex;
   }
 </style>

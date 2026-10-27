@@ -25,11 +25,6 @@ export function setupScrollStage() {
   let locked = false;
   let unlockTimer: number | undefined;
 
-  const measureNav = () => {
-    const nav = document.querySelector<HTMLElement>(".nav");
-    document.documentElement.style.setProperty("--nav-h", `${nav?.offsetHeight ?? 0}px`);
-  };
-
   const goTo = (next: number) => {
     next = Math.max(0, Math.min(slides.length - 1, next));
     if (next === index) return;
@@ -64,6 +59,7 @@ export function setupScrollStage() {
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (locked) return;
+    if ((e.target as HTMLElement).closest("button, input, textarea, select")) return;
     if (e.key === "ArrowDown" || e.key === "PageDown" || e.key === " ") {
       e.preventDefault();
       goTo(index + 1);
@@ -81,19 +77,20 @@ export function setupScrollStage() {
     if (slideIndex !== -1) goTo(slideIndex);
   };
 
-  measureNav();
-  window.addEventListener("resize", measureNav);
+  // Lets other controls (the project rail) jump straight to a slide.
+  const onGoto = (e: Event) => goTo((e as CustomEvent<{ index: number }>).detail.index);
+
   stage.addEventListener("wheel", onWheel, { passive: false });
   stage.addEventListener("touchstart", onTouchStart, { passive: true });
   stage.addEventListener("touchend", onTouchEnd, { passive: true });
   window.addEventListener("keydown", onKeyDown);
   stage.addEventListener("focusin", onFocusIn);
+  stage.addEventListener("stage:goto", onGoto);
 
   document.documentElement.classList.add("scroll-stage");
 
   activeCleanup = () => {
     window.clearTimeout(unlockTimer);
-    window.removeEventListener("resize", measureNav);
     window.removeEventListener("keydown", onKeyDown);
     document.documentElement.classList.remove("scroll-stage");
   };

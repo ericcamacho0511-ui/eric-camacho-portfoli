@@ -12,6 +12,13 @@ const { locale } = Astro.params as { locale: Locale };
 const allWork = (await getCollection("work")).sort((a, b) => a.data.order - b.data.order);
 const upcoming = (await getCollection("upcoming")).sort((a, b) => a.data.order - b.data.order);
 
+// Projects alternate between two independent columns so each stacks tight
+// regardless of its image's height; "order" restores the real sequence
+// when the columns collapse to one on small screens.
+const columns = [0, 1].map((c) =>
+  allWork.map((project, order) => ({ project, order })).filter(({ order }) => order % 2 === c),
+);
+
 // Smaller student/assistant credits — transcribed from your project list.
 // Shown as a plain list below Upcoming, not as full case studies. All short
 // films.
@@ -27,7 +34,7 @@ const otherExperience: { title: string; role: string; director: string; year: nu
   },
   { title: "A les Fosques", role: "Producer", director: "Inés Garriga", year: 2025 },
   { title: "Èdip Rei", role: "1st AD", director: "Pia Vargas", year: 2025 },
-  { title: "Guaret", role: "Production manager", director: "Inés Garriga", year: 2025 },
+  { title: "Guaret", role: "Head of production", director: "Inés Garriga", year: 2025 },
   { title: "Mita", role: "Production assistant", director: "Daniela Mumbrú", year: 2025 },
   { title: "Testigo", role: "Production assistant", director: "Aixa Guerrero", year: 2026 },
   { title: "Impunitat", role: "Production assistant", director: "Clàudia Paz", year: 2026 },
@@ -36,26 +43,56 @@ const otherExperience: { title: string; role: string; director: string; year: nu
 
 <Layout title="Work" locale={locale}>
   <section class="wrap head">
-    <p class="eyebrow">{t(ui.work.eyebrow, locale)}</p>
     <h1>{t(ui.work.heading, locale)}</h1>
   </section>
 
   <section class="wrap">
     <div class="grid">
       {
-        allWork.map((project) => (
-          <a href={`/${locale}/work/${project.id}`} class="card" data-reveal>
-            <img
-              src={project.data.stills[0] ?? project.data.cover}
-              alt={project.data.title}
-            />
-            <div class="card-meta">
-              <span class="font-display card-title">{project.data.title}</span>
-              <span class="card-sub">
-                {typeLabel(project.data.type, locale)} · {project.data.year}
-              </span>
-            </div>
-          </a>
+        columns.map((column) => (
+          <div class="column">
+            {column.map(({ project, order }) => {
+              const { title, bgVideo, bgVideoAspectW, bgVideoAspectH, cover, stills } = project.data;
+              return (
+                <a
+                  href={`/${locale}/work/${project.id}`}
+                  class="card"
+                  style={`order: ${order}`}
+                  data-reveal
+                >
+                  <div
+                    class="card-frame"
+                    style={bgVideoAspectW && bgVideoAspectH ? `aspect-ratio: ${bgVideoAspectW} / ${bgVideoAspectH}` : undefined}
+                  >
+                    {bgVideo ? (
+                      <video
+                        src={bgVideo}
+                        poster={cover}
+                        muted
+                        loop
+                        playsinline
+                        preload="none"
+                        aria-label={title}
+                        data-card-video
+                      />
+                    ) : (
+                      <>
+                        <img src={stills[0] ?? cover} alt={title} />
+                        {stills.slice(1).map((still) => (
+                          <img src={still} alt="" class="card-extra" data-card-extra />
+                        ))}
+                      </>
+                    )}
+                  </div>
+                  <div class="card-meta">
+                    <span class="font-display card-title">{title}</span>
+                    <span class="card-year">{project.data.year}</span>
+                    <span class="card-sub">{typeLabel(project.data.type, locale)}</span>
+                  </div>
+                </a>
+              );
+            })}
+          </div>
         ))
       }
     </div>
@@ -101,72 +138,154 @@ const otherExperience: { title: string; role: string; director: string; year: nu
 
 <script>
   import { setupReveal } from "../../../lib/reveal";
-  document.addEventListener("astro:page-load", setupReveal);
+
+  // Each card plays its project's cover reel (or, for a photo-only project,
+  // cross-fades its stills) only while it's on screen, so a phone with no
+  // hover plays them too, and nothing runs off-screen. Skipped for anyone
+  // who's asked the OS for reduced motion — they keep the still frame.
+  function setupCardReels() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const frames = document.querySelectorAll<HTMLElement>(".card-frame");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const frame = entry.target as HTMLElement;
+          const video = frame.querySelector<HTMLVideoElement>("[data-card-video]");
+          if (video) {
+            if (entry.isIntersecting) video.play().catch(() => {});
+            else video.pause();
+            continue;
+          }
+          frame.classList.toggle("is-playing", entry.isIntersecting);
+        }
+      },
+      { threshold: 0.35 },
+    );
+
+    frames.forEach((frame) => {
+      if (frame.dataset.reelBound) return;
+      frame.dataset.reelBound = "true";
+      observer.observe(frame);
+
+      const extras = frame.querySelectorAll<HTMLElement>("[data-card-extra]");
+      if (extras.length === 0) return;
+      // Position 0 is the base still; 1..n are the extras laid over it.
+      let position = 0;
+      setInterval(() => {
+        if (!frame.classList.contains("is-playing")) return;
+        extras[position - 1]?.classList.remove("is-active");
+        position = (position + 1) % (extras.length + 1);
+        extras[position - 1]?.classList.add("is-active");
+      }, 2200);
+    });
+  }
+
+  document.addEventListener("astro:page-load", () => {
+    setupReveal();
+    setupCardReels();
+  });
 </script>
 
 <style>
   .head {
     padding-top: 3rem;
     padding-bottom: 3rem;
-    max-width: 800px;
   }
 
   .head h1 {
     font-size: clamp(2.8rem, 6.5vw, 4.6rem);
-    margin-top: 0.5rem;
   }
 
+  /* Two wide columns, the right one dropped a step. Each image keeps the
+     proportions it was shot in — a widescreen frame isn't cropped to fit
+     a box. */
   .grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2.5rem;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    align-items: start;
     padding-bottom: 2rem;
+  }
+
+  .column {
+    display: flex;
+    flex-direction: column;
+    gap: 3.5rem;
+  }
+
+  .column:nth-child(2) {
+    margin-top: 6rem;
   }
 
   .card {
     display: block;
     text-decoration: none;
     color: var(--fg);
-    transition: transform 0.25s ease;
   }
 
-  .card img {
+  .card-frame {
+    position: relative;
+    overflow: hidden;
+    background: var(--border);
+  }
+
+  .card-frame :is(img, video) {
+    display: block;
     width: 100%;
-    aspect-ratio: 4 / 3;
+    height: auto;
+    transition: transform 0.6s ease;
+  }
+
+  .card-frame video {
+    height: 100%;
     object-fit: cover;
-    margin-bottom: 0.75rem;
+  }
+
+  .card:hover .card-frame :is(img, video) {
+    transform: scale(1.025);
+  }
+
+  /* A photo project's remaining stills sit on top of the first and fade
+     through it while the card is on screen. */
+  .card-frame .card-extra {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
     transition:
-      opacity 0.25s ease,
-      transform 0.4s ease;
+      opacity 1s ease,
+      transform 0.6s ease;
   }
 
-  .card:hover {
-    transform: translateY(-4px);
-  }
-
-  .card:hover img {
-    opacity: 0.85;
-    transform: scale(1.03);
-  }
-
-  .card:active {
-    transform: translateY(-1px) scale(0.99);
+  .card-frame .card-extra.is-active {
+    opacity: 1;
   }
 
   .card-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    gap: 0.15rem 1rem;
+    margin-top: 0.9rem;
   }
 
   .card-title {
     font-family: var(--font-title);
-    font-size: 1.25rem;
+    font-size: 1.6rem;
     color: var(--title);
     text-transform: none;
   }
 
+  .card-year {
+    color: var(--fg-muted);
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
+  }
+
   .card-sub {
+    grid-column: 1;
     color: var(--fg-muted);
     font-size: 0.85rem;
   }
@@ -251,13 +370,16 @@ const otherExperience: { title: string; role: string; director: string; year: nu
 
   @media (max-width: 720px) {
     .grid {
-      grid-template-columns: 1fr 1fr;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .grid {
       grid-template-columns: 1fr;
+      gap: 3rem;
+    }
+
+    .column {
+      display: contents;
+    }
+
+    .column:nth-child(2) {
+      margin-top: 0;
     }
   }
 </style>

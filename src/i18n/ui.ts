@@ -26,6 +26,7 @@ export const ui = {
       en: "Audiovisual producer in Barcelona. Young ambition, projects from scratch.",
     },
     scrollCue: { ca: "desplaça", es: "desplaza", en: "scroll" },
+    railLabel: { ca: "Projectes", es: "Proyectos", en: "Projects" },
   },
   work: {
     eyebrow: { ca: "Treballs", es: "Trabajos", en: "Work" },
@@ -49,9 +50,9 @@ export const ui = {
     eyebrow: { ca: "Sobre mi", es: "Sobre mí", en: "About" },
     bio: [
       {
-        ca: "Sóc productor i estudiant de producció a l’ESCAC, a Barcelona. La major part de la meva trajectòria és en curtmetratges estudiantils, treballant a una escala prou petita perquè produir volgués dir tocar gairebé tots els departaments pel camí, no gestionar-los des de la distància. Últimament també m’he anat endinsant en els videoclips, un ritme diferent, però el mateix instint de fons.",
-        es: "Soy productor y estudiante de producción en ESCAC, en Barcelona. La mayor parte de mi trayectoria está en cortometrajes estudiantiles, trabajando a una escala lo bastante pequeña como para que producir significara tocar casi todos los departamentos por el camino, no gestionar desde la distancia. Últimamente también me he ido adentrando en los videoclips, un ritmo distinto, pero el mismo instinto de fondo.",
-        en: "I’m a producer and production student at ESCAC, in Barcelona, specializing in production. Most of my track record is in student short films, working at a scale small enough that producing meant touching nearly every department along the way, not managing from a distance. Lately I’ve also been moving into music videos, a different rhythm, but the same instinct underneath.",
+        ca: "Sóc productor i estudiant de producció a l’ESCAC, a Barcelona. La major part de la meva trajectòria és en curtmetratges estudiantils, treballant a una escala prou petita perquè produir volgués dir tocar gairebé tots els departaments pel camí. Últimament també m’he anat endinsant en els videoclips, un ritme diferent, però el mateix instint de fons.",
+        es: "Soy productor y estudiante de producción en ESCAC, en Barcelona. La mayor parte de mi trayectoria está en cortometrajes estudiantiles, trabajando a una escala lo bastante pequeña como para que producir significara tocar casi todos los departamentos por el camino. Últimamente también me he ido adentrando en los videoclips, un ritmo distinto, pero el mismo instinto de fondo.",
+        en: "I’m a producer and production student at ESCAC, in Barcelona, specializing in production. Most of my track record is in student short films, working at a scale small enough that producing meant touching nearly every department along the way. Lately I’ve also been moving into music videos, a different rhythm, but the same instinct underneath.",
       },
       {
         ca: "Em considero un productor a qui li agrada submergir-se en el procés creatiu i impulsar la visió de l’equip artístic, no només mantenir les coses dins del calendari. Això ve dels càrrecs pels quals he passat abans de produir, 1r ajudant de direcció, cap de producció, on vaig aprendre que un rodatge només surt bé si les persones que el fan no han de pensar en res més que l’escena que tenen davant. Aquesta continua sent la feina, tal com ho veig: obrir camí perquè la visió realment es faci realitat.",
@@ -75,7 +76,6 @@ export const ui = {
     },
   },
   notFound: {
-    eyebrow: { ca: "Error 404", es: "Error 404", en: "Error 404" },
     heading: { ca: "Pàgina no trobada.", es: "Página no encontrada.", en: "Page not found." },
     body: {
       ca: "Aquesta pàgina no existeix o s’ha mogut d’adreça.",
@@ -98,10 +98,10 @@ export const typeLabels: Record<string, Dict> = {
 
 export const roleLabels: Record<string, Dict> = {
   Producer: { ca: "Productor", es: "Productor", en: "Producer" },
-  "Production manager": { ca: "Director de producció", es: "Director de producción", en: "Production manager" },
+  "Production manager": { ca: "Director de producció", es: "Director de producción", en: "Line producer" },
   "Production assistant": { ca: "Auxiliar de producció", es: "Auxiliar de producción", en: "Production assistant" },
   "1st AD": { ca: "1r ajudant de direcció", es: "1er ayudante de dirección", en: "1st AD" },
-  "Head of production": { ca: "Cap de producció", es: "Jefe de producción", en: "Head of production" },
+  "Head of production": { ca: "Cap de producció", es: "Jefe de producción", en: "Production manager" },
 };
 
 export function t(dict: Dict, locale: Locale): string {

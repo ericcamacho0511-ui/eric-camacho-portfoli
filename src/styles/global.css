@@ -1,46 +1,14 @@
-/* 1797 (Claustro Comfama) — the site's main title typeface, self-hosted.
-   Designed by Santiago Arango for the Claustro Comfama San Ignacio
-   renovation in Medellín. © 2018 Claustro Comfama San Ignacio, licensed
-   CC BY 4.0 (confirmed in the font file's own embedded metadata). */
+/* Archivo — the site's single typeface, self-hosted (SIL Open Font
+   License 1.1, copy in /fonts/archivo/OFL.txt). A variable font on both
+   weight and width: titles use its narrowest, heaviest setting, text its
+   normal width. Subset to Latin, which covers Catalan and Spanish
+   including the "l·l". */
 @font-face {
-  font-family: "1797";
-  src: url("/fonts/1797/1797-MEDIUM.otf") format("opentype");
-  font-weight: 500;
+  font-family: "Archivo";
+  src: url("/fonts/archivo/Archivo-VF.woff2") format("woff2");
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
   font-style: normal;
-  font-display: swap;
-}
-
-/* Babel Sans — the site's secondary (body/UI) typeface, self-hosted
-   since it's a local font file rather than a Google Fonts one. */
-@font-face {
-  font-family: "Babel Sans";
-  src: url("/fonts/babel-sans/BabelSans.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Babel Sans";
-  src: url("/fonts/babel-sans/BabelSans-Bold.ttf") format("truetype");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Babel Sans";
-  src: url("/fonts/babel-sans/BabelSans-Oblique.ttf") format("truetype");
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Babel Sans";
-  src: url("/fonts/babel-sans/BabelSans-BoldOblique.ttf") format("truetype");
-  font-weight: 700;
-  font-style: italic;
   font-display: swap;
 }
 
@@ -48,18 +16,19 @@
    Design tokens. Change a value here and it updates everywhere —
    this is the one file to touch if you want to retune colors,
    spacing, or type sizes across the whole site.
+   Black and white only: the footage supplies all the colour.
 --------------------------------------------------------- */
 :root {
-  --bg: #faf9f6;
-  --fg: #1c1a17;
-  --fg-muted: #726b5c;
-  --border: #e6e1d6;
-  --accent: #9a5334; /* used sparingly: link hover, small marks */
-  --title: #6e7239; /* Pantone 18-0435 TCX "Calla Green", sampled by eye — nudge if it's off */
+  --bg: #000000;
+  --fg: #f2f2ef;
+  --fg-muted: #8d8d89;
+  --border: #262626;
+  --title: var(--fg);
+  --accent: var(--fg); /* link underlines, focus rings */
 
-  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
-  --font-title: "1797", "Bricolage Grotesque", "Inter", -apple-system, sans-serif;
-  --font-body: "Babel Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-title: var(--font-display);
+  --font-body: var(--font-display);
 
   --container: 1200px;
   --gutter: clamp(1.25rem, 4vw, 3rem);
@@ -71,7 +40,18 @@
 
 html {
   background: var(--bg);
-  color-scheme: light;
+  color-scheme: dark;
+  -webkit-tap-highlight-color: rgba(242, 242, 239, 0.12);
+}
+
+::selection {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+:focus-visible {
+  outline: 2px solid var(--fg);
+  outline-offset: 3px;
 }
 
 body {
@@ -82,8 +62,9 @@ body {
   font-size: 16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  /* Every non-title piece of text on the site is lowercase by default,
-     first letter included — titles opt back out explicitly below. */
+  /* Interface text (menu, labels, credits, small print) is lowercase by
+     design; titles and running text opt back out to their written
+     capitals. */
   text-transform: lowercase;
 }
 
@@ -102,8 +83,6 @@ a {
   padding: 0 var(--gutter);
 }
 
-/* Headline type — Fraunces at large sizes has a distinctive editorial
-   character (it's what gives us the "Park Pictures" feel) */
 h1,
 h2,
 h3,
@@ -116,14 +95,24 @@ h3,
   text-wrap: balance;
 }
 
-/* Titles get the Calla Green + Bricolage Grotesque treatment — but only
-   the color is skipped on dark backgrounds. Home's reel titles sit over
-   dark video with a dark overlay, so those stay light/cream for contrast
-   (styled separately in index.astro) but still pick up the new font. */
+/* Titles: Archivo at its narrowest and heaviest — the poster voice. */
+h1,
+h2,
+h3,
+.reel-title,
+.hero-title,
+.card-title,
+.upcoming-title,
+.other-title {
+  font-family: var(--font-title);
+  font-stretch: 64%;
+  font-weight: 800;
+  letter-spacing: -0.005em;
+}
+
 h1,
 h2,
 h3 {
-  font-family: var(--font-title);
   color: var(--title);
   text-transform: none;
 }

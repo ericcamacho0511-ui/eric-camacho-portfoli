@@ -7,45 +7,84 @@ import { t, ui } from "../i18n/ui";
 const locale = "ca" as const;
 ---
 
-<Layout title="404" locale={locale} description={t(ui.notFound.body, locale)}>
-  <section class="wrap head">
-    <p class="eyebrow">{t(ui.notFound.eyebrow, locale)}</p>
-    <p class="code font-title">404</p>
-    <h1>{t(ui.notFound.heading, locale)}</h1>
-    <p class="body">{t(ui.notFound.body, locale)}</p>
-    <a href="/ca/" class="cta link-underline font-display">{t(ui.notFound.cta, locale)}</a>
+<Layout title="404" locale={locale} description={t(ui.notFound.body, locale)} noFooter overlayNav>
+  <section class="frame">
+    <img src="/images/gasolina/still-1.jpg" alt="" class="frame-bg" />
+    <div class="frame-shade"></div>
+
+    <div class="wrap frame-content">
+      <p class="code" aria-hidden="true">404</p>
+      <h1>{t(ui.notFound.heading, locale)}</h1>
+      <p class="body">{t(ui.notFound.body, locale)}</p>
+      <a href="/ca/" class="cta link-underline">{t(ui.notFound.cta, locale)}</a>
+    </div>
   </section>
 </Layout>
 
 <style>
-  .head {
-    padding-top: 4rem;
-    padding-bottom: 8rem;
-    max-width: 640px;
+  /* Same full-bleed frame as the contact page: one image, the message
+     low-left in the poster voice. */
+  .frame {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    min-height: 100dvh;
+    padding-bottom: clamp(2rem, 7vh, 4.5rem);
+    overflow: hidden;
+  }
+
+  .frame-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 60% 40%;
+  }
+
+  .frame-shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.88) 0%,
+      rgba(0, 0, 0, 0.45) 45%,
+      rgba(0, 0, 0, 0.1) 75%,
+      rgba(0, 0, 0, 0.4) 100%
+    );
+  }
+
+  .frame-content {
+    position: relative;
+    width: 100%;
   }
 
   .code {
-    color: var(--title);
-    font-size: clamp(4rem, 12vw, 7rem);
-    line-height: 1;
-    margin-top: 1rem;
+    margin: 0;
+    font-family: var(--font-title);
+    font-stretch: 64%;
+    font-weight: 800;
+    font-size: clamp(7rem, 26vw, 19rem);
+    line-height: 0.82;
+    letter-spacing: -0.01em;
   }
 
-  .head h1 {
-    font-size: clamp(2rem, 4.5vw, 2.8rem);
-    margin-top: 1.5rem;
+  h1 {
+    margin-top: 1.25rem;
+    font-size: clamp(2rem, 5vw, 3.6rem);
   }
 
   .body {
-    margin-top: 1rem;
-    color: var(--fg-muted);
-    font-size: 1.1rem;
+    text-transform: none;
+    margin: 0.75rem 0 0;
     max-width: 38ch;
+    color: var(--fg-muted);
+    font-size: 1.05rem;
   }
 
   .cta {
     display: inline-block;
-    margin-top: 2.5rem;
-    font-size: 1.25rem;
+    margin-top: 1.75rem;
+    font-size: 1.15rem;
   }
 </style>

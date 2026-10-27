@@ -1,4 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <circle cx="32" cy="32" r="31" fill="#6e7239" />
-  <text x="32" y="43" font-family="Georgia, 'Times New Roman', serif" font-size="34" font-style="italic" fill="#faf9f6" text-anchor="middle">È</text>
+  <circle cx="32" cy="32" r="30" fill="#000" stroke="#f2f2ef" stroke-width="2" />
+  <path fill="#f2f2ef" transform="translate(22.838 49.000) scale(0.03858 -0.03858)" d="M45.478515625 0V687.54345703125H424.9560546875V556.02294921875H197.89013671875V415.216796875H390.32568359375V283.23974609375H197.89013671875V131.5205078125H429.49951171875V0ZM302.8251953125 748.34765625H215.521484375L121.28271484375 877.34765625L121.79073293585527 881.34765625H244.8251953125Z" />
 </svg>

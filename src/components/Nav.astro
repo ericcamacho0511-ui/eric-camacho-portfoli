@@ -3,8 +3,9 @@ import { locales, localeNames, t, ui, switchLocalePath, type Locale } from "../i
 
 interface Props {
   locale: Locale;
+  overlay?: boolean;
 }
-const { locale } = Astro.props;
+const { locale, overlay = false } = Astro.props;
 
 const links = [
   { href: `/${locale}/work`, label: t(ui.nav.work, locale), display: true },
@@ -15,7 +16,7 @@ const links = [
 const currentPath = Astro.url.pathname;
 ---
 
-<header class="nav">
+<header class="nav" class:list={[{ overlay }]}>
   <div class="wrap nav-inner">
     <a href={`/${locale}/`} class="wordmark">Èric Camacho</a>
     <div class="nav-right">
@@ -128,6 +129,18 @@ const currentPath = Astro.url.pathname;
 
   .lang-sep {
     opacity: 0.5;
+  }
+
+  /* Over full-bleed footage (the home presentation, the contact frame) the
+     nav floats on a soft scrim instead of taking a bar of its own. */
+  .nav.overlay,
+  :global(html.scroll-stage) .nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0));
   }
 
   @media (max-width: 600px) {

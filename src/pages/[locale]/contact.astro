@@ -7,64 +7,131 @@ export function getStaticPaths() {
 }
 
 const { locale } = Astro.params as { locale: Locale };
+const year = new Date().getFullYear();
 ---
 
-<Layout title="Contact" locale={locale}>
-  <section class="wrap head">
-    <p class="eyebrow">{t(ui.contact.eyebrow, locale)}</p>
-    <h1>{t(ui.contact.heading, locale)}</h1>
-    <div class="contact-list">
-      <a
-        href="mailto:ericcamacho0511@gmail.com"
-        class="contact-link font-display link-underline"
-        data-reveal
-      >
-        ericcamacho0511@gmail.com
-      </a>
-      <a href="tel:+34637548797" class="contact-link font-display link-underline" data-reveal>
-        +34&nbsp;637&nbsp;548&nbsp;797
-      </a>
-      <a
-        href="https://instagram.com/____ericamacho"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="contact-link font-display link-underline"
-        data-reveal
-      >
-        @____ericamacho
-      </a>
+<Layout title="Contact" locale={locale} noFooter overlayNav>
+  <section class="frame">
+    <img src="/images/sambando/still-7.jpg" alt="" class="frame-bg" />
+    <div class="frame-shade"></div>
+
+    <div class="wrap frame-content">
+      <h1 class="sr-only">{t(ui.contact.eyebrow, locale)}</h1>
+
+      <ul class="contact-list">
+        <li>
+          <a href="mailto:ericcamacho0511@gmail.com" class="contact-link link-underline">
+            ericcamacho0511@gmail.com
+          </a>
+        </li>
+        <li>
+          <a href="tel:+34637548797" class="contact-link link-underline">
+            +34&nbsp;637&nbsp;548&nbsp;797
+          </a>
+        </li>
+        <li>
+          <a
+            href="https://instagram.com/____ericamacho"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="contact-link link-underline"
+          >
+            @____ericamacho
+          </a>
+        </li>
+      </ul>
+
+      <p class="copy">&copy; {year} Èric Camacho</p>
     </div>
   </section>
 </Layout>
 
-<script>
-  import { setupReveal } from "../../lib/reveal";
-  document.addEventListener("astro:page-load", setupReveal);
-</script>
-
 <style>
-  .head {
-    padding-top: 3rem;
-    padding-bottom: 6rem;
-    max-width: 800px;
+  /* One frame from the work fills the screen; the three ways to reach me
+     sit low-left in the same poster voice as the project titles. */
+  .frame {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    min-height: 100dvh;
+    padding-bottom: clamp(2rem, 7vh, 4.5rem);
+    overflow: hidden;
   }
 
-  .head h1 {
-    font-size: clamp(2.8rem, 6.5vw, 4.6rem);
-    margin-top: 0.5rem;
+  .frame-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 20% 50%;
+  }
+
+  @media (max-width: 700px) {
+    .frame-bg {
+      object-position: 52% 50%;
+    }
+  }
+
+  .frame-shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.7) 0%,
+      rgba(0, 0, 0, 0.3) 40%,
+      rgba(0, 0, 0, 0) 70%,
+      rgba(0, 0, 0, 0.3) 100%
+    );
+  }
+
+  .frame-content {
+    position: relative;
+    width: 100%;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   .contact-list {
-    margin-top: 2.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
     align-items: flex-start;
+    gap: 0.25rem;
   }
 
   .contact-link {
     display: inline-block;
-    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    font-family: var(--font-title);
+    font-stretch: 64%;
+    font-weight: 800;
+    font-size: clamp(1.7rem, 4.6vw, 4rem);
+    line-height: 1.02;
+    letter-spacing: -0.005em;
     text-decoration: none;
+    background-size: 0% 3px;
+    padding-bottom: 0.08em;
+  }
+
+  .contact-link:hover {
+    background-size: 100% 3px;
+  }
+
+  .copy {
+    margin: 2.25rem 0 0;
+    font-size: 0.85rem;
+    color: var(--fg-muted);
   }
 </style>

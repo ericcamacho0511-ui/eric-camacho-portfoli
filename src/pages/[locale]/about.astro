@@ -14,7 +14,6 @@ const { locale } = Astro.params as { locale: Locale };
     <img src="/images/about/eric.jpg" alt="Èric Camacho" class="portrait" data-reveal />
 
     <div class="intro">
-      <p class="eyebrow">{t(ui.about.eyebrow, locale)}</p>
       <h1>Èric Camacho</h1>
 
       <div class="bio font-display">
@@ -35,10 +34,9 @@ const { locale } = Astro.params as { locale: Locale };
   .head {
     padding-top: 3rem;
     padding-bottom: 6rem;
-    max-width: 1080px;
     display: grid;
-    grid-template-columns: minmax(220px, 320px) 1fr;
-    gap: 3rem;
+    grid-template-columns: minmax(220px, 360px) 1fr;
+    gap: 4rem;
     align-items: start;
   }
 
@@ -51,10 +49,11 @@ const { locale } = Astro.params as { locale: Locale };
 
   .head h1 {
     font-size: clamp(2.8rem, 6.5vw, 4.6rem);
-    margin-top: 0.5rem;
   }
 
   .bio {
+    text-transform: none;
+    max-width: 46rem;
     margin-top: 2.5rem;
     display: flex;
     flex-direction: column;
@@ -64,14 +63,16 @@ const { locale } = Astro.params as { locale: Locale };
     font-weight: 400;
   }
 
-  @media (max-width: 720px) {
+  /* Portrait tablets are too narrow to hold the photo and a readable bio
+     side by side, so the photo stacks above the text up to 900px. */
+  @media (max-width: 900px) {
     .head {
       grid-template-columns: 1fr;
       gap: 2rem;
     }
 
     .portrait {
-      max-width: 280px;
+      max-width: 300px;
     }
   }
 </style>

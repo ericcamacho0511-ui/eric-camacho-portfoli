@@ -46,6 +46,12 @@ export const ui = {
     and: { ca: "i", es: "y", en: "and" },
     dir: { ca: "Dir.", es: "Dir.", en: "Dir." },
     backToWork: { ca: "← Tornar a treballs", es: "← Volver a trabajos", en: "← Back to work" },
+    // Alt text and button labels read out by screen readers.
+    photo: { ca: "foto", es: "foto", en: "photo" },
+    previousPhoto: { ca: "Foto anterior", es: "Foto anterior", en: "Previous photo" },
+    nextPhoto: { ca: "Foto següent", es: "Foto siguiente", en: "Next photo" },
+    poster: { ca: "cartell", es: "cartel", en: "poster" },
+    endCredits: { ca: "crèdits finals", es: "créditos finales", en: "end credits" },
   },
   about: {
     eyebrow: { ca: "Sobre mi", es: "Sobre mí", en: "About" },
@@ -70,6 +76,8 @@ export const ui = {
     getInTouch: { ca: "Contacta’m", es: "Contáctame", en: "Get in touch" },
   },
   meta: {
+    // The home page's browser-tab title (the other pages reuse their nav label).
+    homeTitle: { ca: "Productor audiovisual", es: "Productor audiovisual", en: "Audiovisual producer" },
     description: {
       ca: "Èric Camacho, productor audiovisual. Curtmetratges i videoclips, produïts des de zero.",
       es: "Èric Camacho, productor audiovisual. Cortometrajes y videoclips, producidos desde cero.",

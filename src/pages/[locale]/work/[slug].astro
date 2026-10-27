@@ -106,7 +106,7 @@ const heroVideoStyle = capStyle(heroVideoAspectW, heroVideoAspectH);
               {stills.map((still, i) => (
                 <img
                   src={still}
-                  alt={`${title}, photo ${i + 1}`}
+                  alt={`${title}, ${t(ui.project.photo, locale)} ${i + 1}`}
                   class="slide"
                   class:list={[{ "is-active": i === 0 }]}
                   data-credit={photoCredits[i]}
@@ -118,10 +118,10 @@ const heroVideoStyle = capStyle(heroVideoAspectW, heroVideoAspectH);
                 {photoCredits[0]}
               </p>
             )}
-            <button class="slider-nav prev" data-prev aria-label="Previous photo">
+            <button class="slider-nav prev" data-prev aria-label={t(ui.project.previousPhoto, locale)}>
               ‹
             </button>
-            <button class="slider-nav next" data-next aria-label="Next photo">
+            <button class="slider-nav next" data-next aria-label={t(ui.project.nextPhoto, locale)}>
               ›
             </button>
             <div class="slider-counter" data-counter>
@@ -158,7 +158,7 @@ const heroVideoStyle = capStyle(heroVideoAspectW, heroVideoAspectH);
           )}
           {poster && (
             <div class="poster-aside" style={asideWidth ? `max-width: ${asideWidth}px` : undefined}>
-              <img src={poster} alt={`${title} poster`} />
+              <img src={poster} alt={`${title}, ${t(ui.project.poster, locale)}`} />
             </div>
           )}
         </div>
@@ -177,7 +177,7 @@ const heroVideoStyle = capStyle(heroVideoAspectW, heroVideoAspectH);
               (creditsIsVideo ? (
                 <video src={credits} autoplay muted loop playsinline data-reveal />
               ) : (
-                <img src={credits} alt={`${title}, end credits`} data-reveal />
+                <img src={credits} alt={`${title}, ${t(ui.project.endCredits, locale)}`} data-reveal />
               ))}
           </div>
         </div>

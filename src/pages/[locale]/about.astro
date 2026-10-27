@@ -9,7 +9,7 @@ export function getStaticPaths() {
 const { locale } = Astro.params as { locale: Locale };
 ---
 
-<Layout title="About" locale={locale}>
+<Layout title={t(ui.nav.about, locale)} locale={locale}>
   <section class="wrap head">
     <img src="/images/about/eric.jpg" alt="Èric Camacho" class="portrait" data-reveal />
 

@@ -16,7 +16,7 @@ const allWork = (await getCollection("work")).sort((a, b) => a.data.order - b.da
 const [heroLineA, heroLineB] = t(ui.home.heroTitle, locale).split(/(?<=\.)\s+/);
 ---
 
-<Layout title="Home" locale={locale} noFooter>
+<Layout title={t(ui.meta.homeTitle, locale)} locale={locale} noFooter>
   <div class="stage" id="stage">
     <div class="stage-track" id="stage-track">
       <section class="slide hero-slide">

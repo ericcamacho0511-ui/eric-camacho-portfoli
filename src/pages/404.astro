@@ -1,10 +1,16 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { t, ui } from "../i18n/ui";
+import { locales, defaultLocale, t, ui } from "../i18n/ui";
 
-// No real locale context for an unmatched route, so this falls back to
-// the site's default locale rather than trying to guess one.
-const locale = "ca" as const;
+// A static host serves this one file for every URL it can't match, so there
+// is no locale at build time. The page is built in the default locale (what
+// a visitor without JavaScript sees) and carries the other two languages in
+// hidden blocks; the script below picks one from the URL ("/es/loquesea")
+// or, failing that, from the browser's language.
+const locale = defaultLocale;
+const navLabels = Object.fromEntries(
+  locales.map((l) => [l, [t(ui.nav.work, l), t(ui.nav.about, l), t(ui.nav.contact, l)]]),
+);
 ---
 
 <Layout title="404" locale={locale} description={t(ui.notFound.body, locale)} noFooter overlayNav>
@@ -14,12 +20,58 @@ const locale = "ca" as const;
 
     <div class="wrap frame-content">
       <p class="code" aria-hidden="true">404</p>
-      <h1>{t(ui.notFound.heading, locale)}</h1>
-      <p class="body">{t(ui.notFound.body, locale)}</p>
-      <a href="/ca/" class="cta link-underline">{t(ui.notFound.cta, locale)}</a>
+      {
+        locales.map((l) => (
+          <div data-lang={l} hidden={l !== locale}>
+            <h1>{t(ui.notFound.heading, l)}</h1>
+            <p class="body">{t(ui.notFound.body, l)}</p>
+            <a href={`/${l}/`} class="cta link-underline">
+              {t(ui.notFound.cta, l)}
+            </a>
+          </div>
+        ))
+      }
     </div>
   </section>
 </Layout>
+
+<script define:vars={{ navLabels }}>
+  (function () {
+    var locales = ["ca", "es", "en"];
+    var first = location.pathname.split("/").filter(Boolean)[0];
+    var loc = locales.indexOf(first) > -1 ? first : null;
+    if (!loc) {
+      var langs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language];
+      for (var i = 0; i < langs.length && !loc; i++) {
+        var short = String(langs[i]).slice(0, 2).toLowerCase();
+        if (locales.indexOf(short) > -1) loc = short;
+      }
+    }
+    loc = loc || "ca";
+
+    document.documentElement.lang = loc;
+    document.querySelectorAll("[data-lang]").forEach(function (el) {
+      el.hidden = el.getAttribute("data-lang") !== loc;
+    });
+
+    // The nav was rendered in the default locale — point it at the chosen one.
+    var paths = ["/work", "/about", "/contact"];
+    document.querySelectorAll(".nav .links a").forEach(function (a, i) {
+      a.textContent = navLabels[loc][i];
+      a.setAttribute("href", "/" + loc + paths[i]);
+    });
+    var wordmark = document.querySelector(".nav .wordmark");
+    if (wordmark) wordmark.setAttribute("href", "/" + loc + "/");
+    document.querySelectorAll(".nav .lang-link").forEach(function (a, i) {
+      var active = locales[i] === loc;
+      // There is no translated version of an unknown URL — go to that language's home.
+      a.setAttribute("href", "/" + locales[i] + "/");
+      a.classList.toggle("is-active", active);
+      if (active) a.setAttribute("aria-current", "true");
+      else a.removeAttribute("aria-current");
+    });
+  })();
+</script>
 
 <style>
   /* Same full-bleed frame as the contact page: one image, the message

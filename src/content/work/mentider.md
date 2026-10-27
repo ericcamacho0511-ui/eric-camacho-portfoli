@@ -2,7 +2,7 @@
 title: "Mentider"
 type: "Music video"
 role: "Producer"
-director: "Adrià Sanchez"
+director: "Adrià Sánchez"
 artist: "Meri Prata"
 year: 2026
 video: "https://www.youtube.com/watch?v=ARVR3zqtQgY"

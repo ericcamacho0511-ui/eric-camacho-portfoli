@@ -2,7 +2,7 @@ import { defineCollection, z } from "astro:content";
 import { glob } from "astro/loaders";
 
 // A piece of prose that needs its own wording per language (not just a
-// lookup like "type"/"role") — project notes, synopses. ca/es/en all
+// lookup like "type"/"role") — project synopses. ca/es/en all
 // required so a project can't go live missing a translation.
 const localizedString = z.object({ ca: z.string(), es: z.string(), en: z.string() });
 
@@ -13,7 +13,11 @@ const work = defineCollection({
     title: z.string(), // proper noun — same across locales, not translated
     type: z.string(), // e.g. "Music video", "Short film", "Photobook" — looked up in src/i18n/ui.ts, not translated per project
     role: z.string(), // e.g. "Producer", "Production manager" — same lookup
-    director: z.string().optional(), // not every project has one (e.g. a photobook)
+    director: z.string().optional(), // not every project has one (e.g. a photobook, where each photo has its own)
+    // Photobooks only: who directed each photo, in the same order as `stills`
+    // (one or more names per photo). The project page swaps the credit line to
+    // match whichever photo the slider is showing.
+    stillDirectors: z.array(z.array(z.string())).optional(),
     artist: z.string().optional(), // for music videos: who it was made for — shown in the browser tab title
     year: z.number(),
     video: z.string().optional(), // YouTube/Vimeo URL — omit if none yet
@@ -33,14 +37,13 @@ const work = defineCollection({
     heroVideo: z.string().optional(),
     heroVideoAspectW: z.number().optional(),
     heroVideoAspectH: z.number().optional(),
-    poster: z.string().optional(), // official key art/poster — shown beside the production note, kept separate from "stills"
-    credits: z.string().optional(), // an end-credits still or clip (.mp4) — shown beside the production note, same slot as "poster"
+    poster: z.string().optional(), // official key art/poster — shown beside the synopsis, kept separate from "stills"
+    credits: z.string().optional(), // an end-credits still or clip (.mp4) — shown in the same slot as "poster"
     // Max width (px) for that poster/credits slot. Default (440) suits a
     // portrait poster; a landscape credits still/clip needs more width to
     // reach full column height without being capped small.
     asideWidth: z.number().optional(),
-    synopsis: localizedString.optional(), // short, spoiler-light premise — shown above the production note
-    note: localizedString, // the production note — replaces the markdown body so it can be translated per locale
+    synopsis: localizedString.optional(), // short, spoiler-light premise
     stills: z.array(z.string()).default([]), // gallery images — also used as the homepage slider for photo-only projects
     featured: z.boolean().default(false), // show on the homepage hero
     order: z.number().default(0), // controls display order (lower = earlier)

@@ -11,10 +11,6 @@ bgVideo: "/images/mentider/cover.mp4"
 bgVideoAspectW: 1600
 bgVideoAspectH: 762
 credits: "/images/mentider/credits.jpg"
-note:
-  ca: "El meu primer videoclip."
-  es: "Mi primer videoclip."
-  en: "My first music video."
 stills:
   - "/images/mentider/still-1.jpg"
   - "/images/mentider/still-2.jpg"

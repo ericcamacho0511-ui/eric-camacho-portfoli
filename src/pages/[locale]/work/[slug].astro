@@ -2,7 +2,7 @@
 import Layout from "../../../layouts/Layout.astro";
 import VideoEmbed from "../../../components/VideoEmbed.astro";
 import { getCollection } from "astro:content";
-import { locales, t, ui, typeLabel, roleLabel, type Locale } from "../../../i18n/ui";
+import { locales, t, ui, typeLabel, creditLine, directedByLine, type Locale } from "../../../i18n/ui";
 
 export async function getStaticPaths() {
   const work = await getCollection("work");
@@ -21,6 +21,7 @@ const {
   type,
   role,
   director,
+  stillDirectors,
   artist,
   year,
   video,
@@ -37,18 +38,13 @@ const {
   credits,
   asideWidth,
   synopsis,
-  note,
   stills,
 } = entry.data;
 
-// "poster" and "credits" share one slot beside the production note —
-// whichever is set wins (a project only ever has one). Credits can be
-// either a still or a short clip, so branch on the file extension.
-const asideMedia = poster ?? credits;
-const asideIsVideo = asideMedia?.endsWith(".mp4");
-// A credits still/clip is sized to match the stills gallery below rather
-// than the wider, hand-picked width an official poster gets.
-const isCreditsAside = !poster && !!credits;
+// An official poster sits beside the synopsis; an end-credits still/clip
+// instead closes the stills grid below, so it's the same size as them.
+// Credits can be either a still or a short clip, so branch on the extension.
+const creditsIsVideo = credits?.endsWith(".mp4");
 
 // The hero is a photo slider only for genuinely photo-only projects — any
 // video at all (an external link, a with-sound hero clip, or even just the
@@ -57,7 +53,12 @@ const isGallery = !video && !heroVideo && !bgVideo && stills.length > 1;
 // Show the stills strip below whenever the hero above isn't already the
 // slider itself (which would otherwise duplicate every still twice).
 const galleryStills = isGallery ? [] : stills;
+const showStillsGrid = galleryStills.length > 0 || !!credits;
 const pageTitle = artist ? `${title} - ${artist}` : title;
+
+// Photobooks: each photo was directed by someone different, so the slider
+// shows "Directed by …" for whichever photo is on screen.
+const photoCredits = (stillDirectors ?? []).map((names) => directedByLine(names, locale));
 
 // Same "cap width so a tall clip never grows past 85vh" trick as
 // VideoEmbed — keeps each local video at its real aspect ratio instead of
@@ -83,10 +84,7 @@ const heroVideoStyle = capStyle(heroVideoAspectW, heroVideoAspectH);
           {t(ui.project.for, locale)} {artist}
         </p>
       )}
-      <p class="meta">
-        {roleLabel(role, locale)}
-        {director && ` · ${t(ui.project.directedBy, locale)} ${director}`}
-      </p>
+      <p class="credit">{creditLine(role, director, locale)}</p>
     </header>
 
     <div class="media">
@@ -111,9 +109,15 @@ const heroVideoStyle = capStyle(heroVideoAspectW, heroVideoAspectH);
                   alt={`${title}, photo ${i + 1}`}
                   class="slide"
                   class:list={[{ "is-active": i === 0 }]}
+                  data-credit={photoCredits[i]}
                 />
               ))}
             </div>
+            {photoCredits.length > 0 && (
+              <p class="slider-credit" data-credit-out aria-live="polite">
+                {photoCredits[0]}
+              </p>
+            )}
             <button class="slider-nav prev" data-prev aria-label="Previous photo">
               ‹
             </button>
@@ -141,45 +145,40 @@ const heroVideoStyle = capStyle(heroVideoAspectW, heroVideoAspectH);
       }
     </div>
 
-    <div class="wrap body" class:list={[{ "has-poster": !!poster }]}>
-      <div class="body-text">
-        {
-          synopsis && (
-            <div class="synopsis-block">
-              <p class="eyebrow">{t(ui.project.synopsis, locale)}</p>
-              <p class="synopsis-text font-display">{t(synopsis, locale)}</p>
+    {
+      (synopsis || poster) && (
+        <div class="wrap body" class:list={[{ "has-poster": !!poster }]}>
+          {synopsis && (
+            <div class="body-text">
+              <div class="synopsis-block">
+                <p class="eyebrow">{t(ui.project.synopsis, locale)}</p>
+                <p class="synopsis-text font-display">{t(synopsis, locale)}</p>
+              </div>
             </div>
-          )
-        }
-        <div class="note font-display">
-          <p>{t(note, locale)}</p>
+          )}
+          {poster && (
+            <div class="poster-aside" style={asideWidth ? `max-width: ${asideWidth}px` : undefined}>
+              <img src={poster} alt={`${title} poster`} />
+            </div>
+          )}
         </div>
-      </div>
-      {
-        asideMedia && (
-          <div
-            class="note-poster"
-            class:list={[{ "match-stills": isCreditsAside }]}
-            style={!isCreditsAside && asideWidth ? `max-width: ${asideWidth}px` : undefined}
-          >
-            {asideIsVideo ? (
-              <video src={asideMedia} autoplay muted loop playsinline />
-            ) : (
-              <img src={asideMedia} alt={`${title} poster`} />
-            )}
-          </div>
-        )
-      }
-    </div>
+      )
+    }
 
     {
-      galleryStills.length > 0 && (
+      showStillsGrid && (
         <div class="wrap stills-block">
           <p class="eyebrow">{t(ui.project.stills, locale)}</p>
           <div class="stills">
             {galleryStills.map((still) => (
               <img src={still} alt={title} data-reveal />
             ))}
+            {credits &&
+              (creditsIsVideo ? (
+                <video src={credits} autoplay muted loop playsinline data-reveal />
+              ) : (
+                <img src={credits} alt={`${title}, end credits`} data-reveal />
+              ))}
           </div>
         </div>
       )
@@ -210,6 +209,7 @@ const heroVideoStyle = capStyle(heroVideoAspectW, heroVideoAspectH);
 
       const slides = slider.querySelectorAll<HTMLElement>(".slide");
       const counter = slider.querySelector<HTMLElement>("[data-counter]");
+      const credit = slider.querySelector<HTMLElement>("[data-credit-out]");
       const prevBtn = slider.querySelector<HTMLElement>("[data-prev]");
       const nextBtn = slider.querySelector<HTMLElement>("[data-next]");
       let index = 0;
@@ -219,6 +219,7 @@ const heroVideoStyle = capStyle(heroVideoAspectW, heroVideoAspectH);
         index = (next + slides.length) % slides.length;
         slides[index].classList.add("is-active");
         if (counter) counter.textContent = `${index + 1} / ${slides.length}`;
+        if (credit) credit.textContent = slides[index].dataset.credit ?? "";
       }
 
       prevBtn?.addEventListener("click", () => show(index - 1));
@@ -272,17 +273,29 @@ const heroVideoStyle = capStyle(heroVideoAspectW, heroVideoAspectH);
     margin-top: 0.5rem;
   }
 
+  /* Archivo has no italic, so this stays upright — a browser-slanted
+     version would be a fake. Names keep their capitals (credits, not UI). */
   .artist {
+    text-transform: none;
     margin-top: 0.6rem;
-    font-size: 1.3rem;
-    font-style: italic;
+    font-size: clamp(1.15rem, 2vw, 1.4rem);
     color: var(--fg-muted);
   }
 
-  .meta {
-    margin-top: 0.75rem;
-    color: var(--fg-muted);
-    font-size: 0.9rem;
+  /* The credit is the point of this page's header after the title: my role
+     and who directed it, at near-subtitle size in full ink, set off from the
+     title by a hairline like a billing line on a poster. */
+  .credit {
+    text-transform: none;
+    margin-top: 1.75rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--border);
+    font-size: clamp(1.4rem, 2.8vw, 2.1rem);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.005em;
+    color: var(--fg);
+    text-wrap: balance;
   }
 
   .media {
@@ -387,6 +400,37 @@ const heroVideoStyle = capStyle(heroVideoAspectW, heroVideoAspectH);
     opacity: 0.85;
   }
 
+  /* Who directed the photo on screen — bottom-left over a soft scrim so it
+     reads on any frame, and clear of the prev/next arrows (mid-height). */
+  .slider-credit {
+    position: absolute;
+    left: 1.5rem;
+    bottom: 1.15rem;
+    z-index: 2;
+    max-width: calc(100% - 6rem);
+    margin: 0;
+    text-transform: none;
+    color: #f5f2ea;
+    font-size: clamp(1.25rem, 2.6vw, 1.9rem);
+    font-weight: 600;
+    line-height: 1.2;
+    pointer-events: none;
+    text-shadow: 0 1px 14px rgba(0, 0, 0, 0.75);
+  }
+
+  .slider:has(.slider-credit)::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 36%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0));
+    pointer-events: none;
+  }
+
+  .slider-counter {
+    z-index: 2;
+  }
+
   .body {
     padding-top: 3.5rem;
     padding-bottom: 2rem;
@@ -420,19 +464,8 @@ const heroVideoStyle = capStyle(heroVideoAspectW, heroVideoAspectH);
     color: var(--fg-muted);
   }
 
-  .note {
-    text-transform: none;
-    font-size: 1.3rem;
-    line-height: 1.5;
-    font-weight: 400;
-    color: var(--fg);
-  }
-
-  /* The poster/credits media spans the full stacked height of the text
-     beside it when its aspect ratio allows — a wide landscape still (unlike
-     a portrait poster) often can't reach that at a narrow max-width, so this
-     is centered both ways rather than pinned top-left when it falls short. */
-  .note-poster {
+  /* The official poster spans the full height of the synopsis beside it. */
+  .poster-aside {
     flex: 0 1 auto;
     max-width: 440px;
     display: flex;
@@ -440,31 +473,13 @@ const heroVideoStyle = capStyle(heroVideoAspectW, heroVideoAspectH);
     justify-content: center;
   }
 
-  /* A credits still/clip (as opposed to an official poster) is sized to
-     match a single image in the stills gallery below — same calc, same
-     breakpoints, so it reads as part of that same set of stills. Width-driven
-     with height:auto (not the stretch-to-column-height rule below), exactly
-     like ".stills img", so it's truly the same size and aspect ratio. */
-  .note-poster.match-stills {
-    width: calc((100% - 3.5rem) / 3);
-    max-width: none;
-  }
-
-  .note-poster img,
-  .note-poster video {
+  .poster-aside img {
     width: auto;
     height: 100%;
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
     display: block;
-  }
-
-  .note-poster.match-stills img,
-  .note-poster.match-stills video {
-    width: 100%;
-    height: auto;
-    max-height: none;
   }
 
   .stills-block {
@@ -480,10 +495,12 @@ const heroVideoStyle = capStyle(heroVideoAspectW, heroVideoAspectH);
     gap: 1.75rem;
   }
 
-  .stills img {
+  .stills img,
+  .stills video {
     /* No forced aspect-ratio/crop here on purpose — stills come in whatever
        ratio they were shot (near-square, cinematic widescreen, etc.) and
-       forcing them into a fixed box would cut real composition off. */
+       forcing them into a fixed box would cut real composition off. The
+       end-credits still/clip is the last tile of the same grid. */
     width: calc((100% - 3.5rem) / 3);
     height: auto;
   }
@@ -500,21 +517,15 @@ const heroVideoStyle = capStyle(heroVideoAspectW, heroVideoAspectH);
   }
 
   @media (max-width: 900px) {
-    .stills img {
-      width: calc((100% - 1.75rem) / 2);
-    }
-
-    .note-poster.match-stills {
+    .stills img,
+    .stills video {
       width: calc((100% - 1.75rem) / 2);
     }
   }
 
   @media (max-width: 640px) {
-    .stills img {
-      width: 100%;
-    }
-
-    .note-poster.match-stills {
+    .stills img,
+    .stills video {
       width: 100%;
     }
 

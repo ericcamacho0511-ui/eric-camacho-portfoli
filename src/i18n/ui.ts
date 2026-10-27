@@ -43,6 +43,7 @@ export const ui = {
     stills: { ca: "Fotogrames", es: "Fotogramas", en: "Stills" },
     for: { ca: "Per a", es: "Para", en: "For" },
     directedBy: { ca: "Dirigit per", es: "Dirigido por", en: "Directed by" },
+    and: { ca: "i", es: "y", en: "and" },
     dir: { ca: "Dir.", es: "Dir.", en: "Dir." },
     backToWork: { ca: "← Tornar a treballs", es: "← Volver a trabajos", en: "← Back to work" },
   },
@@ -114,6 +115,25 @@ export function typeLabel(value: string, locale: Locale): string {
 
 export function roleLabel(value: string, locale: Locale): string {
   return roleLabels[value]?.[locale] ?? value;
+}
+
+// One or more names joined with the locale's "and": "Eloi Rodés",
+// "Ines Garriga i Adrià Sánchez".
+export function joinNames(names: string[], locale: Locale): string {
+  if (names.length <= 1) return names[0] ?? "";
+  return `${names.slice(0, -1).join(", ")} ${t(ui.project.and, locale)} ${names[names.length - 1]}`;
+}
+
+// "Dirigit per Eloi Rodés" — the credit shown beside a single photobook photo.
+export function directedByLine(directors: string[], locale: Locale): string {
+  return `${t(ui.project.directedBy, locale)} ${joinNames(directors, locale)}`;
+}
+
+// "Productor, dirigit per Eloi Rodés": the role I held, then who directed it.
+export function creditLine(role: string, director: string | undefined, locale: Locale): string {
+  const label = roleLabel(role, locale);
+  if (!director) return label;
+  return `${label}, ${t(ui.project.directedBy, locale).toLowerCase()} ${director}`;
 }
 
 // Swaps the locale segment of a pathname — used by the language switcher to

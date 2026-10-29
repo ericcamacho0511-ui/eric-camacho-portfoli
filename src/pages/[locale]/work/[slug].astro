@@ -2,7 +2,17 @@
 import Layout from "../../../layouts/Layout.astro";
 import VideoEmbed from "../../../components/VideoEmbed.astro";
 import { getCollection } from "astro:content";
-import { locales, t, ui, typeLabel, creditLine, directedByLine, type Locale } from "../../../i18n/ui";
+import {
+  locales,
+  t,
+  ui,
+  typeLabel,
+  creditLine,
+  directedByLine,
+  projectDescription,
+  stillAlt,
+  type Locale,
+} from "../../../i18n/ui";
 
 export async function getStaticPaths() {
   const work = await getCollection("work");
@@ -56,6 +66,12 @@ const galleryStills = isGallery ? [] : stills;
 const showStillsGrid = galleryStills.length > 0 || !!credits;
 const pageTitle = artist ? `${title} - ${artist}` : title;
 
+// What search engines and shared links say about this project: its own
+// description (names + synopsis) and its own share image, not the site-wide ones.
+const info = { title, type, role, director, artist, stillDirectors };
+const description = projectDescription({ ...info, synopsis }, locale);
+const alt = stillAlt(info, locale);
+
 // Photobooks: each photo was directed by someone different, so the slider
 // shows "Directed by …" for whichever photo is on screen.
 const photoCredits = (stillDirectors ?? []).map((names) => directedByLine(names, locale));
@@ -72,7 +88,7 @@ const bgVideoStyle = capStyle(bgVideoAspectW, bgVideoAspectH);
 const heroVideoStyle = capStyle(heroVideoAspectW, heroVideoAspectH);
 ---
 
-<Layout title={pageTitle} locale={locale}>
+<Layout skeleton="project" title={pageTitle} description={description} image={`/og/${entry.id}.jpg`} locale={locale}>
   <article>
     <header class="wrap head">
       <p class="eyebrow">
@@ -106,7 +122,7 @@ const heroVideoStyle = capStyle(heroVideoAspectW, heroVideoAspectH);
               {stills.map((still, i) => (
                 <img
                   src={still}
-                  alt={`${title}, ${t(ui.project.photo, locale)} ${i + 1}`}
+                  alt={`${title}, ${t(ui.project.photo, locale)} ${i + 1}${photoCredits[i] ? `. ${photoCredits[i]}` : ""}`}
                   class="slide"
                   class:list={[{ "is-active": i === 0 }]}
                   data-credit={photoCredits[i]}
@@ -134,13 +150,14 @@ const heroVideoStyle = capStyle(heroVideoAspectW, heroVideoAspectH);
             style={bgVideoStyle}
             src={bgVideo}
             poster={cover}
+            data-boot-wait
             autoplay
             muted
             loop
             playsinline
           />
         ) : (
-          <img class="hero-image" src={cover} alt={title} />
+          <img class="hero-image" src={cover} alt={alt} />
         )
       }
     </div>
@@ -171,7 +188,7 @@ const heroVideoStyle = capStyle(heroVideoAspectW, heroVideoAspectH);
           <p class="eyebrow">{t(ui.project.stills, locale)}</p>
           <div class="stills">
             {galleryStills.map((still) => (
-              <img src={still} alt={title} data-reveal />
+              <img src={still} alt={alt} data-reveal />
             ))}
             {credits &&
               (creditsIsVideo ? (

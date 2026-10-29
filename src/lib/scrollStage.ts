@@ -3,7 +3,9 @@
 // one slide, with the next input ignored until the transition finishes.
 // Degrades to a normal tall scrolling page without JS, and is skipped
 // entirely for prefers-reduced-motion.
-const TRANSITION_MS = 850;
+// How long one slide takes to move in (the CSS transition on the track uses the same
+// value) — exported so the page can keep the outgoing slide's video going until then.
+export const TRANSITION_MS = 850;
 const SWIPE_THRESHOLD = 40;
 
 let activeCleanup: (() => void) | null = null;

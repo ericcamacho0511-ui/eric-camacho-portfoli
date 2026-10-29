@@ -1,31 +1,48 @@
 ---
 import Nav from "../components/Nav.astro";
 import Footer from "../components/Footer.astro";
+import BootSkeleton from "../components/BootSkeleton.astro";
 import "../styles/global.css";
-import { t, ui, type Locale } from "../i18n/ui";
+import { locales, t, ui, switchLocalePath, type Locale } from "../i18n/ui";
 import { ClientRouter } from "astro:transitions";
 
 interface Props {
   title: string;
+  // Replaces the whole "<title> - Èric Camacho" tab title (used by the home page).
+  fullTitle?: string;
   locale: Locale;
   description?: string;
+  // Path of the image used when the page is shared (defaults to the per-language card).
+  image?: string;
   footerFlush?: boolean;
   noFooter?: boolean;
   overlayNav?: boolean;
+  // Which page-shaped loading skeleton to show while the page first loads.
+  skeleton?: "home" | "work" | "project" | "about" | "contact" | "notfound";
 }
 
 const {
   title,
+  fullTitle,
   locale,
+  image,
   description = t(ui.meta.description, locale),
   footerFlush = false,
   noFooter = false,
   overlayNav = false,
+  skeleton = "project",
 } = Astro.props;
 
-const pageTitle = `${title} - Èric Camacho`;
+const pageTitle = fullTitle ?? `${title} - Èric Camacho`;
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
-const ogImageURL = new URL(`/og-${locale}.jpg`, Astro.site);
+const ogImageURL = new URL(image ?? `/og-${locale}.jpg`, Astro.site);
+
+// Tells search engines the three language versions are the same page, so they
+// don't compete with each other. The 404 has no translated twin, so it gets none.
+const isNotFound = /^\/404\/?$/.test(Astro.url.pathname);
+const alternates = isNotFound
+  ? []
+  : locales.map((l) => ({ lang: l, href: new URL(switchLocalePath(Astro.url.pathname, l), Astro.site) }));
 const ogLocales: Record<Locale, string> = { ca: "ca_ES", es: "es_ES", en: "en_US" };
 ---
 
@@ -34,6 +51,75 @@ const ogLocales: Record<Locale, string> = { ca: "ca_ES", es: "es_ES", en: "en_US
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Loading state (the skeleton in BootSkeleton.astro). Runs on a fresh page
+         load only — moving between pages afterwards is handled by the router's
+         own transitions. It lifts once fonts, images and the page's scripts are
+         ready, never sooner than MIN (so it reads as a loading state rather than
+         a flash) and never later than CAP (so nobody is kept waiting on a slow
+         asset). Without JavaScript the attribute is never set and the page just
+         shows as usual. -->
+    <script is:inline>
+      (function () {
+        var root = document.documentElement;
+        var MIN = 500;
+        var CAP = 4000;
+        var start = Date.now();
+        var gone = false;
+        root.setAttribute("data-boot", "on");
+
+        function lift() {
+          if (gone) return;
+          gone = true;
+          setTimeout(function () {
+            root.setAttribute("data-boot", "leaving");
+            document.dispatchEvent(new Event("boot:leaving"));
+            setTimeout(function () {
+              root.removeAttribute("data-boot");
+              document.dispatchEvent(new Event("boot:done"));
+            }, 1000);
+          }, Math.max(0, MIN - (Date.now() - start)));
+        }
+
+        function once(target, type) {
+          return new Promise(function (resolve) {
+            target.addEventListener(type, resolve, { once: true });
+          });
+        }
+        function within(promise, ms) {
+          return Promise.race([promise, new Promise(function (r) { setTimeout(r, ms); })]);
+        }
+
+        var waits = [];
+        // Fonts: ask for the two cuts the site uses (document.fonts.ready alone
+        // resolves at once, before layout has asked for any).
+        if (document.fonts && document.fonts.load) {
+          waits.push(Promise.all([
+            document.fonts.load('500 1em "Archivo"'),
+            document.fonts.load('800 1em "Archivo"')
+          ]).catch(function () {}));
+        }
+        // Images, styles and scripts.
+        waits.push(document.readyState === "complete" ? Promise.resolve() : once(window, "load"));
+        // The router's first "page loaded" (it also switches on the home page's locked scroll).
+        waits.push(within(once(document, "astro:page-load"), 1500));
+        // Poster frames of the videos that open a page.
+        waits.push(new Promise(function (resolve) {
+          document.addEventListener("DOMContentLoaded", function () {
+            var videos = document.querySelectorAll("video[data-boot-wait][poster]");
+            var left = videos.length;
+            if (!left) return resolve();
+            Array.prototype.forEach.call(videos, function (v) {
+              var img = new Image();
+              img.onload = img.onerror = function () { if (--left === 0) resolve(); };
+              img.src = v.getAttribute("poster");
+            });
+          });
+        }));
+
+        Promise.all(waits).then(lift);
+        setTimeout(lift, CAP);
+      })();
+    </script>
     <!-- The ?v= suffix is deliberate: browsers cache favicons by URL and keep
          showing the old one for weeks. Bump it whenever the icons change. -->
     <link rel="icon" href="/favicon.ico?v=2" sizes="32x32" />
@@ -41,6 +127,8 @@ const ogLocales: Record<Locale, string> = { ca: "ca_ES", es: "es_ES", en: "en_US
     <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
     <link rel="manifest" href="/manifest.webmanifest?v=2" />
     <link rel="canonical" href={canonicalURL} />
+    {alternates.map((a) => <link rel="alternate" hreflang={a.lang} href={a.href} />)}
+    {alternates.length > 0 && <link rel="alternate" hreflang="x-default" href={alternates[0].href} />}
     <meta name="description" content={description} />
     <title>{pageTitle}</title>
 
@@ -63,9 +151,11 @@ const ogLocales: Record<Locale, string> = { ca: "ca_ES", es: "es_ES", en: "en_US
     <meta name="color-scheme" content="dark" />
     <meta name="apple-mobile-web-app-title" content="Èric Camacho" />
     <link rel="preload" href="/fonts/archivo/Archivo-VF.woff2" as="font" type="font/woff2" crossorigin />
+    <slot name="head" />
     <ClientRouter />
   </head>
   <body>
+    <BootSkeleton variant={skeleton} />
     <Nav locale={locale} overlay={overlayNav} />
     <main>
       <slot />

@@ -1,7 +1,7 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import { getCollection } from "astro:content";
-import { locales, t, ui, typeLabel, roleLabel, type Locale } from "../../i18n/ui";
+import { locales, t, ui, typeLabel, roleLabel, stillAlt, type Locale } from "../../i18n/ui";
 
 export function getStaticPaths() {
   return locales.map((locale) => ({ params: { locale } }));
@@ -14,9 +14,33 @@ const allWork = (await getCollection("work")).sort((a, b) => a.data.order - b.da
 // The opening frame is a short montage cut from every project's video,
 // stripped of colour — it comes back as you move into the projects.
 const [heroLineA, heroLineB] = t(ui.home.heroTitle, locale).split(/(?<=\.)\s+/);
+
+// Structured data so search engines can tie the name, the job and the
+// Instagram account together as one person.
+const jobTitles = { ca: "Productor audiovisual", es: "Productor audiovisual", en: "Audiovisual producer" };
+const personLd = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "@id": new URL("/#person", Astro.site).href,
+  name: "Èric Camacho",
+  url: new URL(`/${locale}/`, Astro.site).href,
+  image: new URL("/images/about/eric.jpg", Astro.site).href,
+  jobTitle: jobTitles[locale],
+  description: t(ui.meta.description, locale),
+  address: { "@type": "PostalAddress", addressLocality: "Barcelona", addressCountry: "ES" },
+  affiliation: { "@type": "EducationalOrganization", name: "ESCAC" },
+  sameAs: ["https://www.instagram.com/____ericamacho/"],
+};
 ---
 
-<Layout title={t(ui.meta.homeTitle, locale)} locale={locale} noFooter>
+<Layout
+  skeleton="home"
+  title={t(ui.meta.homeTitle, locale)}
+  fullTitle={`Èric Camacho - ${t(ui.meta.homeTitle, locale)}`}
+  locale={locale}
+  noFooter
+>
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(personLd)} />
   <div class="stage" id="stage">
     <div class="stage-track" id="stage-track">
       <section class="slide hero-slide">
@@ -28,6 +52,7 @@ const [heroLineA, heroLineB] = t(ui.home.heroTitle, locale).split(/(?<=\.)\s+/);
             loop
             playsinline
             preload="auto"
+            data-boot-wait
             data-hover-video
           />
         </div>
@@ -48,6 +73,7 @@ const [heroLineA, heroLineB] = t(ui.home.heroTitle, locale).split(/(?<=\.)\s+/);
       {
         allWork.map((project) => {
           const { bgVideo, stills, cover, title } = project.data;
+          const alt = stillAlt(project.data, locale);
           const useSlider = !bgVideo && stills.length > 1;
           return (
             <a href={`/${locale}/work/${project.id}`} class="slide reel-section">
@@ -67,14 +93,14 @@ const [heroLineA, heroLineB] = t(ui.home.heroTitle, locale).split(/(?<=\.)\s+/);
                   {stills.map((still, i) => (
                     <img
                       src={still}
-                      alt={title}
+                      alt={alt}
                       class="reel-bg slide"
                       class:list={[{ "is-active": i === 0 }]}
                     />
                   ))}
                 </div>
               ) : (
-                <img src={cover} alt={title} class="reel-bg" />
+                <img src={cover} alt={alt} class="reel-bg" />
               )}
               <div class="reel-overlay" />
               <div class="reel-content wrap">
@@ -105,7 +131,7 @@ const [heroLineA, heroLineB] = t(ui.home.heroTitle, locale).split(/(?<=\.)\s+/);
 </Layout>
 
 <script>
-  import { setupScrollStage, teardownScrollStage } from "../../lib/scrollStage";
+  import { setupScrollStage, teardownScrollStage, TRANSITION_MS } from "../../lib/scrollStage";
 
   // Anyone who's told the OS they prefer reduced motion doesn't get the
   // continuous slide crossfade, the hover-triggered video loop, or the
@@ -178,8 +204,26 @@ const [heroLineA, heroLineB] = t(ui.home.heroTitle, locale).split(/(?<=\.)\s+/);
       });
     });
 
+    const slides = document.querySelectorAll<HTMLElement>("#stage-track > .slide");
+    const videoOf = (i: number) => slides[i]?.querySelector<HTMLVideoElement>("[data-hover-video]");
+
+    // The neighbouring slides' videos only have their metadata at first; ask for
+    // the rest as soon as they could be next, so they are already moving when the
+    // slide starts to slide in instead of showing their still until they buffer.
+    const warm = (i: number) => {
+      const video = videoOf(i);
+      if (video && video.preload !== "auto") video.preload = "auto";
+    };
+
+    // While a slide moves, the one being left and the one being entered are both
+    // on screen — so both play. The one being left is only paused (and rewound
+    // for next time) once it has slid out of view.
+    let activeIndex = 0;
+    const releaseTimers = new Map<number, number>();
+
     if (!reduceMotion) {
-      document.querySelector<HTMLVideoElement>(".hero-slide [data-hover-video]")?.play().catch(() => {});
+      videoOf(0)?.play().catch(() => {});
+      warm(1);
     }
 
     stage.addEventListener("slidechange", ((e: CustomEvent<{ index: number; previousIndex: number }>) => {
@@ -191,13 +235,29 @@ const [heroLineA, heroLineB] = t(ui.home.heroTitle, locale).split(/(?<=\.)\s+/);
       });
 
       if (reduceMotion) return;
-      const slides = document.querySelectorAll<HTMLElement>("#stage-track > .slide");
-      const prevVideo = slides[e.detail.previousIndex]?.querySelector<HTMLVideoElement>("[data-hover-video]");
-      if (prevVideo) {
-        prevVideo.pause();
-        prevVideo.currentTime = 0;
-      }
-      slides[e.detail.index]?.querySelector<HTMLVideoElement>("[data-hover-video]")?.play().catch(() => {});
+      const { index, previousIndex } = e.detail;
+      activeIndex = index;
+
+      // The slide being entered starts right away, and is no longer due to be paused
+      // if it was still waiting for its turn to be released.
+      window.clearTimeout(releaseTimers.get(index));
+      videoOf(index)?.play().catch(() => {});
+
+      // The slide being left keeps playing while it moves out of view.
+      window.clearTimeout(releaseTimers.get(previousIndex));
+      releaseTimers.set(
+        previousIndex,
+        window.setTimeout(() => {
+          if (activeIndex === previousIndex) return; // came back to it in the meantime
+          const video = videoOf(previousIndex);
+          if (!video) return;
+          video.pause();
+          video.currentTime = 0;
+        }, TRANSITION_MS),
+      );
+
+      warm(index + 1);
+      warm(index - 1);
     }) as EventListener);
   });
 

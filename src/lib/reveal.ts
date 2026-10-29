@@ -6,6 +6,13 @@
 export function setupReveal() {
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
+  // While the loading skeleton fully covers the page ("on"), hold the entrances
+  // so they play as it dissolves ("leaving") instead of finishing unseen behind it.
+  if (document.documentElement.getAttribute("data-boot") === "on") {
+    document.addEventListener("boot:leaving", setupReveal, { once: true });
+    return;
+  }
+
   const els = document.querySelectorAll<HTMLElement>("[data-reveal]:not([data-reveal-bound])");
   if (els.length === 0) return;
 

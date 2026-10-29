@@ -21,9 +21,9 @@ export const ui = {
   },
   home: {
     heroTitle: {
-      ca: "Productor audiovisual a Barcelona. Ambició jove, projectes des de zero.",
-      es: "Productor audiovisual en Barcelona. Ambición joven, proyectos desde cero.",
-      en: "Audiovisual producer in Barcelona. Young ambition, projects from scratch.",
+      ca: "Productor audiovisual a Barcelona. Talent jove, projectes des de zero.",
+      es: "Productor audiovisual en Barcelona. Talento joven, proyectos desde cero.",
+      en: "Audiovisual producer in Barcelona. Young talent, projects from scratch.",
     },
     scrollCue: { ca: "desplaça", es: "desplaza", en: "scroll" },
     railLabel: { ca: "Projectes", es: "Proyectos", en: "Projects" },
@@ -35,6 +35,11 @@ export const ui = {
       es: "Todo, en un solo lugar.",
       en: "Everything, in one place.",
     },
+    metaDescription: {
+      ca: "Curtmetratges, videoclips i fotollibres produïts per Èric Camacho, productor audiovisual a Barcelona.",
+      es: "Cortometrajes, videoclips y fotolibros producidos por Èric Camacho, productor audiovisual en Barcelona.",
+      en: "Short films, music videos and photobooks produced by Èric Camacho, an audiovisual producer in Barcelona.",
+    },
     upcoming: { ca: "Properament", es: "Próximamente", en: "Upcoming" },
     otherExperience: { ca: "Altres experiències", es: "Otras experiencias", en: "Other experience" },
   },
@@ -44,6 +49,8 @@ export const ui = {
     for: { ca: "Per a", es: "Para", en: "For" },
     directedBy: { ca: "Dirigit per", es: "Dirigido por", en: "Directed by" },
     and: { ca: "i", es: "y", en: "and" },
+    producedBy: { ca: "produït per", es: "producido por", en: "produced by" },
+    stillFrom: { ca: "Fotograma de", es: "Fotograma de", en: "Still from" },
     dir: { ca: "Dir.", es: "Dir.", en: "Dir." },
     backToWork: { ca: "← Tornar a treballs", es: "← Volver a trabajos", en: "← Back to work" },
     // Alt text and button labels read out by screen readers.
@@ -55,6 +62,11 @@ export const ui = {
   },
   about: {
     eyebrow: { ca: "Sobre mi", es: "Sobre mí", en: "About" },
+    metaDescription: {
+      ca: "Èric Camacho és productor i estudiant de producció a l’ESCAC, a Barcelona. Treballa en curtmetratges i videoclips, des de zero.",
+      es: "Èric Camacho es productor y estudiante de producción en ESCAC, en Barcelona. Trabaja en cortometrajes y videoclips, desde cero.",
+      en: "Èric Camacho is a producer and production student at ESCAC in Barcelona, working on short films and music videos from scratch.",
+    },
     bio: [
       {
         ca: "Sóc productor i estudiant de producció a l’ESCAC, a Barcelona. La major part de la meva trajectòria és en curtmetratges estudiantils, treballant a una escala prou petita perquè produir volgués dir tocar gairebé tots els departaments pel camí. Últimament també m’he anat endinsant en els videoclips, un ritme diferent, però el mateix instint de fons.",
@@ -70,14 +82,23 @@ export const ui = {
   },
   contact: {
     eyebrow: { ca: "Contacte", es: "Contacto", en: "Contact" },
+    metaDescription: {
+      ca: "Contacta amb Èric Camacho, productor audiovisual a Barcelona: correu electrònic, telèfon i Instagram.",
+      es: "Contacta con Èric Camacho, productor audiovisual en Barcelona: correo electrónico, teléfono e Instagram.",
+      en: "Get in touch with Èric Camacho, an audiovisual producer in Barcelona: email, phone and Instagram.",
+    },
     heading: { ca: "Parlem.", es: "Hablemos.", en: "Let’s talk." },
   },
   footer: {
     getInTouch: { ca: "Contacta’m", es: "Contáctame", en: "Get in touch" },
   },
   meta: {
-    // The home page's browser-tab title (the other pages reuse their nav label).
-    homeTitle: { ca: "Productor audiovisual", es: "Productor audiovisual", en: "Audiovisual producer" },
+    // The home page's browser-tab title, after the name (the other pages reuse their nav label).
+    homeTitle: {
+      ca: "Productor audiovisual a Barcelona",
+      es: "Productor audiovisual en Barcelona",
+      en: "Audiovisual producer in Barcelona",
+    },
     description: {
       ca: "Èric Camacho, productor audiovisual. Curtmetratges i videoclips, produïts des de zero.",
       es: "Èric Camacho, productor audiovisual. Cortometrajes y videoclips, producidos desde cero.",
@@ -142,6 +163,63 @@ export function creditLine(role: string, director: string | undefined, locale: L
   const label = roleLabel(role, locale);
   if (!director) return label;
   return `${label}, ${t(ui.project.directedBy, locale).toLowerCase()} ${director}`;
+}
+
+const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
+const upperFirst = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+// What Èric did on a project, as a phrase: "produït per Èric Camacho" when he
+// produced it, otherwise his actual role ("cap de producció: Èric Camacho").
+export function producerCredit(role: string, locale: Locale): string {
+  if (role === "Producer") return `${t(ui.project.producedBy, locale)} Èric Camacho`;
+  return `${lowerFirst(roleLabel(role, locale))}: Èric Camacho`;
+}
+
+export interface ProjectInfo {
+  title: string;
+  type: string;
+  role: string;
+  director?: string;
+  artist?: string;
+  stillDirectors?: string[][];
+}
+
+// Everyone credited with directing: the project's director, or — for a
+// photobook — each photo's director, once.
+function directorNames(p: ProjectInfo): string[] {
+  if (p.director) return [p.director];
+  return [...new Set((p.stillDirectors ?? []).flat())];
+}
+
+const MAX_DESCRIPTION = 158;
+
+// A unique <meta name="description"> for a project page, with the names people
+// search for: "El Refugi: curtmetratge, dirigit per Àiman Fina. Produït per
+// Èric Camacho. Martín, un home retret…" — the synopsis fills what's left.
+export function projectDescription(p: ProjectInfo & { synopsis?: Dict }, locale: Locale): string {
+  const names = directorNames(p);
+  const forWho = p.artist ? ` ${lowerFirst(t(ui.project.for, locale))} ${p.artist}` : "";
+  const directed = names.length ? `, ${lowerFirst(t(ui.project.directedBy, locale))} ${joinNames(names, locale)}` : "";
+  const head = `${p.title}: ${typeLabel(p.type, locale).toLowerCase()}${forWho}${directed}. ${upperFirst(producerCredit(p.role, locale))}.`;
+  if (!p.synopsis) return head;
+
+  const room = MAX_DESCRIPTION - head.length - 1;
+  if (room < 40) return head;
+  const text = t(p.synopsis, locale);
+  const fitted = text.length <= room ? text : `${text.slice(0, room - 1).replace(/\s+\S*$/, "")}…`;
+  return `${head} ${fitted}`;
+}
+
+// Alt text for a project's still: "Fotograma de Gasolina, videoclip per a Sam
+// Davies" / "Fotograma de El Refugi, curtmetratge, dirigit per Àiman Fina".
+export function stillAlt(p: ProjectInfo, locale: Locale): string {
+  const kind = typeLabel(p.type, locale).toLowerCase();
+  const who = p.artist
+    ? ` ${lowerFirst(t(ui.project.for, locale))} ${p.artist}`
+    : p.director
+      ? `, ${lowerFirst(t(ui.project.directedBy, locale))} ${p.director}`
+      : "";
+  return `${t(ui.project.stillFrom, locale)} ${p.title}, ${kind}${who}`;
 }
 
 // Swaps the locale segment of a pathname — used by the language switcher to

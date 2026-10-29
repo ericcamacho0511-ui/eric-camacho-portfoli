@@ -10,7 +10,7 @@ const { locale } = Astro.params as { locale: Locale };
 const year = new Date().getFullYear();
 ---
 
-<Layout title={t(ui.nav.contact, locale)} locale={locale} noFooter overlayNav>
+<Layout skeleton="contact" title={t(ui.nav.contact, locale)} description={t(ui.contact.metaDescription, locale)} locale={locale} noFooter overlayNav>
   <section class="frame">
     <img src="/images/sambando/still-7.jpg" alt="" class="frame-bg" />
     <div class="frame-shade"></div>

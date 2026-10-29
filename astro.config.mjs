@@ -11,7 +11,10 @@ export default defineConfig({
       prefixDefaultLocale: true,
     },
   },
+  // Fallback for local dev and hosts without server redirects. On Vercel the
+  // real redirect for "/" lives in vercel.json (a proper 308/307 by browser
+  // language), which runs before this page is ever served.
   redirects: {
-    '/': '/ca',
+    '/': '/ca/',
   },
 });

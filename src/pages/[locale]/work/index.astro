@@ -1,7 +1,7 @@
 ---
 import Layout from "../../../layouts/Layout.astro";
 import { getCollection } from "astro:content";
-import { locales, t, ui, typeLabel, roleLabel, type Locale } from "../../../i18n/ui";
+import { locales, t, ui, typeLabel, roleLabel, stillAlt, type Locale } from "../../../i18n/ui";
 
 export function getStaticPaths() {
   return locales.map((locale) => ({ params: { locale } }));
@@ -41,7 +41,7 @@ const otherExperience: { title: string; role: string; director: string; year: nu
 ];
 ---
 
-<Layout title={t(ui.nav.work, locale)} locale={locale}>
+<Layout skeleton="work" title={t(ui.nav.work, locale)} description={t(ui.work.metaDescription, locale)} locale={locale}>
   <section class="wrap head">
     <h1>{t(ui.work.heading, locale)}</h1>
   </section>
@@ -53,6 +53,7 @@ const otherExperience: { title: string; role: string; director: string; year: nu
           <div class="column">
             {column.map(({ project, order }) => {
               const { title, bgVideo, bgVideoAspectW, bgVideoAspectH, cover, stills } = project.data;
+              const alt = stillAlt(project.data, locale);
               return (
                 <a
                   href={`/${locale}/work/${project.id}`}
@@ -72,12 +73,12 @@ const otherExperience: { title: string; role: string; director: string; year: nu
                         loop
                         playsinline
                         preload="none"
-                        aria-label={title}
+                        aria-label={alt}
                         data-card-video
                       />
                     ) : (
                       <>
-                        <img src={stills[0] ?? cover} alt={title} />
+                        <img src={stills[0] ?? cover} alt={alt} />
                         {stills.slice(1).map((still) => (
                           <img src={still} alt="" class="card-extra" data-card-extra />
                         ))}
